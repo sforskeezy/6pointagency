@@ -48,7 +48,45 @@ export const Navbar = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  /* Scroll to the top of the current page. Smooth-scrolls when the user
+     is already on a section of the home page. */
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  /* Navigate back to the marketing home view. If the user is currently
+     on a sub-view (service page, login, terms, etc.) we have to clear
+     the URL hash so the App router re-renders the home page; merely
+     scrolling would leave them stranded on the same sub-view. */
+  const goHome = (e) => {
+    e.preventDefault();
+    const h = window.location.hash;
+    const onSubView =
+      h === '#client-login' ||
+      h === '#agent-dash' ||
+      h === '#terms' ||
+      h === '#privacy' ||
+      h.startsWith('#service-');
+
+    if (!onSubView) {
+      scrollToTop();
+      return;
+    }
+
+    /* Strip the hash entirely so we land at the very top of the URL,
+       then synthesize a hashchange so App's listener re-renders into
+       the home view. Direct `window.location.hash = ''` keeps a stray
+       `#` in the address bar in some browsers. */
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(
+        null,
+        '',
+        window.location.pathname + window.location.search
+      );
+    } else {
+      window.location.hash = '';
+    }
+    window.dispatchEvent(new Event('hashchange'));
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  };
 
   return (
     <>
@@ -83,11 +121,13 @@ export const Navbar = () => {
                 gap: 24,
               }}
             >
-              {/* Brand (vertical lockup) */}
+              {/* Brand (vertical lockup) — clicking always returns to the
+                  marketing home, even if we're currently inside a service
+                  page or other sub-view. */}
               <a
                 href="#top"
                 aria-label="6POINT home"
-                onClick={(e) => { e.preventDefault(); scrollToTop(); }}
+                onClick={goHome}
                 style={{ display: 'inline-flex', textDecoration: 'none' }}
               >
                 <Logo markSize={26} textSize={11} />
@@ -113,7 +153,7 @@ export const Navbar = () => {
           <motion.button
             key="glass-disc"
             type="button"
-            onClick={scrollToTop}
+            onClick={goHome}
             aria-label="Back to top"
             initial={{ y: -80, opacity: 0, scale: 0.6 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}

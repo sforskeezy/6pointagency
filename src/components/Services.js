@@ -24,6 +24,7 @@ const SERVICES = [
   {
     title: 'Branding',
     short: 'Branding',
+    slug: 'branding',
     bg: 'var(--ink)',
     fg: '#fff',
     Icon: ({ size }) => <SparkleMark size={size} />,
@@ -32,6 +33,7 @@ const SERVICES = [
   {
     title: 'Web Design',
     short: 'Web Design',
+    slug: 'web-design',
     bg: '#2563EB', // vivid blue
     fg: '#fff',
     Icon: ({ size }) => <Paintbrush size={size} strokeWidth={1.8} />,
@@ -39,6 +41,7 @@ const SERVICES = [
   {
     title: 'Growth Strategy',
     short: 'Growth',
+    slug: 'growth-strategy',
     bg: 'var(--brand)', // sage green
     fg: '#fff',
     Icon: ({ size }) => <TrendingUp size={size} strokeWidth={2} />,
@@ -46,6 +49,7 @@ const SERVICES = [
   {
     title: 'Social Media',
     short: 'Social',
+    slug: 'social-media',
     bg: 'var(--brand-2)', // warm gold
     fg: '#1A1500',
     Icon: ({ size }) => <Camera size={size} strokeWidth={1.8} />,
@@ -56,14 +60,23 @@ const SERVICES = [
    LearnButton — animated CTA with a bouncy entry and a jump-out arrow.
    Uses framer variants so the parent's `whileHover` propagates to children.
    ────────────────────────────────────────────────────────────────────────── */
-const LearnButton = ({ label }) => (
+const LearnButton = ({ label, href = '#contact' }) => (
   <motion.a
-    href="#contact"
+    href={href}
     initial="rest"
     animate="rest"
     whileHover="hover"
     whileTap={{ scale: 0.96 }}
-    onClick={(e) => e.stopPropagation()}
+    onClick={(e) => {
+      e.stopPropagation();
+      if (href.startsWith('#service-')) {
+        e.preventDefault();
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        window.location.hash = href;
+      }
+    }}
     style={{
       position: 'relative',
       display: 'inline-flex',
@@ -128,10 +141,33 @@ const LearnButton = ({ label }) => (
 /* ────────────────────────────────────────────────────────────────────────── */
 
 const Row = ({ s, index, isActive, isDimmed, onEnter }) => {
+  /* Whole-row navigation so the service title itself is the primary
+     "click here to read about this service" target — the LearnButton on
+     the right is just a visual reinforcement that only shows on hover. */
+  const goToService = (e) => {
+    e.preventDefault();
+    /* Snap to top BEFORE swapping the view so the new page never inherits
+       the deep scroll position of the home page (Lenis smooth-scroll can
+       otherwise leave a frame of "bottom of page" before the new view
+       resets it). */
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    window.location.hash = `#service-${s.slug}`;
+  };
   return (
     <motion.li
       onMouseEnter={onEnter}
       onFocus={onEnter}
+      onClick={goToService}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          goToService(e);
+        }
+      }}
+      role="link"
+      aria-label={`Learn about ${s.title}`}
       tabIndex={0}
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -142,6 +178,7 @@ const Row = ({ s, index, isActive, isDimmed, onEnter }) => {
         listStyle: 'none',
         borderBottom: '1px solid var(--line)',
         outline: 'none',
+        cursor: 'pointer',
       }}
     >
       <div
@@ -238,8 +275,8 @@ const Row = ({ s, index, isActive, isDimmed, onEnter }) => {
           {s.title}
         </motion.h3>
 
-        <AnimatePresence initial={false}>
-          {isActive && (
+        <AnimatePresence initial={false} mode="wait">
+          {isActive ? (
             <motion.div
               key="cta"
               initial={{ opacity: 0, x: 24 }}
@@ -248,8 +285,33 @@ const Row = ({ s, index, isActive, isDimmed, onEnter }) => {
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               style={{ flexShrink: 0 }}
             >
-              <LearnButton label={`Learn about ${s.short}`} />
+              <LearnButton label={`Learn about ${s.short}`} href={`#service-${s.slug}`} />
             </motion.div>
+          ) : (
+            /* Always-visible affordance — a small "→" so the row reads as
+               a link even before the user hovers. Hidden the moment the
+               full LearnButton swaps in, to avoid stacking two CTAs. */
+            <motion.span
+              key="hint"
+              aria-hidden
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              style={{
+                flexShrink: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 36,
+                height: 36,
+                borderRadius: 999,
+                background: 'var(--bg-soft)',
+                color: 'var(--ink-2)',
+              }}
+            >
+              <ArrowUpRight size={16} strokeWidth={2.2} />
+            </motion.span>
           )}
         </AnimatePresence>
       </div>

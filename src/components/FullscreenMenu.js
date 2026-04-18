@@ -61,6 +61,7 @@ const NAV_ITEMS = [
 const SERVICES = [
   {
     label: 'Branding',
+    slug: 'branding',
     sub: 'Make lasting impressions',
     bg: 'var(--ink)',
     fg: '#fff',
@@ -68,6 +69,7 @@ const SERVICES = [
   },
   {
     label: 'Web Design',
+    slug: 'web-design',
     sub: 'Sites that convert',
     bg: '#2563EB',
     fg: '#fff',
@@ -75,6 +77,7 @@ const SERVICES = [
   },
   {
     label: 'Growth Strategy',
+    slug: 'growth-strategy',
     sub: 'Ship more, faster',
     bg: 'var(--brand)',
     fg: '#fff',
@@ -82,6 +85,7 @@ const SERVICES = [
   },
   {
     label: 'Social Media',
+    slug: 'social-media',
     sub: 'Show up everywhere',
     bg: 'var(--brand-2)',
     fg: '#1A1500',
@@ -269,19 +273,81 @@ export const FullscreenMenu = ({ open, onClose }) => {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  /* All hashes that map to a *top-level view* (not a section anchor on
+     the home page). Routing to one of these means swapping the page,
+     not scrolling to a section. */
+  const isViewHash = (href) =>
+    href === '#client-login' ||
+    href === '#agent-dash' ||
+    href === '#terms' ||
+    href === '#privacy' ||
+    href.startsWith('#service-');
+
+  /* Navigate to a target href. Three cases:
+       1. Target is a sub-view (e.g. #service-branding, #client-login):
+          set the hash, App re-renders into that view, scroll to top.
+       2. Target is on the home page and we're already on home:
+          scroll smoothly to the section / top.
+       3. Target is on the home page but we're currently on a sub-view:
+          we must first send the user back to the home view (clear or
+          rewrite the hash, dispatch hashchange so App remounts), then
+          wait for the section element to appear in the DOM before
+          scrolling — otherwise `querySelector` finds nothing because
+          the home page isn't mounted yet. */
   const handleNav = (e, href) => {
     e.preventDefault();
     onClose();
-    // Wait for the close animation before scrolling
+
     setTimeout(() => {
-      if (href === '#top') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else if (href === '#client-login') {
+      if (isViewHash(href)) {
         window.location.hash = href;
-      } else {
-        const el = document.querySelector(href);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.scrollTo(0, 0);
+        return;
       }
+
+      const currentHash = window.location.hash;
+      const onSubView = isViewHash(currentHash);
+
+      if (!onSubView) {
+        if (href === '#top') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          const el = document.querySelector(href);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        return;
+      }
+
+      /* Coming from a sub-view → home. Switch the route first. */
+      if (href === '#top') {
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(
+            null,
+            '',
+            window.location.pathname + window.location.search
+          );
+        } else {
+          window.location.hash = '';
+        }
+        window.dispatchEvent(new Event('hashchange'));
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        return;
+      }
+
+      /* Section anchor (#services, #work, #faq, #contact, …). Setting
+         the hash both fires hashchange (App re-renders to home) and
+         records the section in the URL. Then poll briefly for the
+         element so we scroll once React has actually mounted it. */
+      window.location.hash = href;
+      const tryScroll = (attempts) => {
+        const el = document.querySelector(href);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (attempts < 20) {
+          setTimeout(() => tryScroll(attempts + 1), 30);
+        }
+      };
+      setTimeout(() => tryScroll(0), 60);
     }, 380);
   };
 
@@ -508,11 +574,12 @@ export const FullscreenMenu = ({ open, onClose }) => {
               >
                 {SERVICES.map((s) => {
                   const Icon = s.Icon;
+                  const serviceHref = `#service-${s.slug}`;
                   return (
                     <motion.a
                       key={s.label}
-                      href="#services"
-                      onClick={(e) => handleNav(e, '#services')}
+                      href={serviceHref}
+                      onClick={(e) => handleNav(e, serviceHref)}
                       className="menu-service-card"
                       variants={{
                         hidden: { opacity: 0, y: 14, scale: 0.96 },

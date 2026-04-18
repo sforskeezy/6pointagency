@@ -30,15 +30,79 @@ const NAV_LINKS = [
 ];
 
 const SERVICE_LINKS = [
-  { label: 'Branding',         href: '#services' },
-  { label: 'Web Design',       href: '#services' },
-  { label: 'Growth Strategy',  href: '#services' },
-  { label: 'Social Media',     href: '#services' },
+  { label: 'Branding',         href: '#service-branding' },
+  { label: 'Web Design',       href: '#service-web-design' },
+  { label: 'Growth Strategy',  href: '#service-growth-strategy' },
+  { label: 'Social Media',     href: '#service-social-media' },
   { label: 'Start a project',  href: '#contact' },
 ];
 
 const footerLinkStyle = { fontSize: 15, color: 'rgba(255,255,255,0.78)', textDecoration: 'none' };
 const bottomLinkStyle = { color: 'rgba(255,255,255,0.55)' };
+
+/* Hashes that route to a dedicated view rather than a section on the home page. */
+const isViewHash = (href) =>
+  href === '#client-login' ||
+  href === '#agent-dash' ||
+  href === '#terms' ||
+  href === '#privacy' ||
+  href.startsWith('#service-');
+
+/* Handle a footer link click. Mirrors the routing logic in `Navbar.js` /
+   `FullscreenMenu.js` so that links work whether the user is currently
+   on the marketing home page or inside a sub-view (a service page,
+   login, terms, etc.). Without this, `<a href="#services">` from a
+   service page would set the hash but the browser's auto-scroll-to-id
+   would fire before React mounts the home page, leaving the user
+   stranded at the top of the freshly-mounted home view. */
+const navigateTo = (e, href) => {
+  e.preventDefault();
+
+  if (isViewHash(href)) {
+    window.location.hash = href;
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    return;
+  }
+
+  const currentHash = window.location.hash;
+  const onSubView = isViewHash(currentHash);
+
+  if (!onSubView) {
+    if (href === '#top') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      const el = document.querySelector(href);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    return;
+  }
+
+  if (href === '#top') {
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(
+        null,
+        '',
+        window.location.pathname + window.location.search
+      );
+    } else {
+      window.location.hash = '';
+    }
+    window.dispatchEvent(new Event('hashchange'));
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    return;
+  }
+
+  window.location.hash = href;
+  const tryScroll = (attempts) => {
+    const el = document.querySelector(href);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (attempts < 20) {
+      setTimeout(() => tryScroll(attempts + 1), 30);
+    }
+  };
+  setTimeout(() => tryScroll(0), 60);
+};
 
 const FooterCol = ({ items, delay = 0 }) => (
   <motion.ul
@@ -56,7 +120,14 @@ const FooterCol = ({ items, delay = 0 }) => (
         viewport={{ once: true, margin: '-10%' }}
         transition={{ duration: 0.4, delay: delay + 0.05 + i * 0.04, ease: [0.16, 1, 0.3, 1] }}
       >
-        <a href={it.href} className="footer-link" style={footerLinkStyle}>{it.label}</a>
+        <a
+          href={it.href}
+          onClick={(e) => navigateTo(e, it.href)}
+          className="footer-link"
+          style={footerLinkStyle}
+        >
+          {it.label}
+        </a>
       </motion.li>
     ))}
   </motion.ul>
@@ -77,16 +148,19 @@ const SocialIcon = ({ href, label, children }) => (
   </a>
 );
 
-/* Animate the wordmark with a per-letter staggered reveal so the headline
-   reads as deliberate motion when the user scrolls in. */
+/* Animate the wordmark with a per-letter staggered reveal. Uses
+   `animate` (not `whileInView`) so it always plays on mount — the
+   `whileInView` variant could fail to fire when the footer was already
+   in the viewport at page load (or when the smooth-scroll engine
+   intercepted the IntersectionObserver), leaving the wordmark stuck
+   at opacity 0 and invisible against the black footer. */
 const AnimatedWordmark = ({ text }) => {
   const letters = Array.from(text);
   return (
     <motion.span
       style={{ display: 'inline-flex', overflow: 'hidden', paddingBottom: 4 }}
       initial="rest"
-      whileInView="show"
-      viewport={{ once: true, margin: '-15%' }}
+      animate="show"
       transition={{ staggerChildren: 0.05, delayChildren: 0.05 }}
     >
       {letters.map((char, i) => (
@@ -153,7 +227,7 @@ export const Footer = () => {
               <p style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.7)', marginBottom: 12 }}>
                 Currently booking projects for {year}:
               </p>
-              <a href="#contact" className="open-sign" style={{
+              <a href="#contact" onClick={(e) => navigateTo(e, '#contact')} className="open-sign" style={{
                 display: 'inline-flex', alignItems: 'stretch', borderRadius: 10, overflow: 'hidden',
                 background: '#fff', color: 'var(--ink)', textDecoration: 'none',
               }}>
@@ -237,7 +311,7 @@ export const Footer = () => {
             <span>© {year} 6POINT Designs LLC. All rights reserved.</span>
             <a href="#privacy" style={bottomLinkStyle} className="footer-bottom-link">Privacy</a>
             <a href="#terms" style={bottomLinkStyle} className="footer-bottom-link">Terms &amp; Conditions</a>
-            <a href="#top" style={{ ...bottomLinkStyle, color: 'rgba(255,255,255,0.4)' }} className="footer-bottom-link">site by 6point</a>
+            <a href="#top" onClick={(e) => navigateTo(e, '#top')} style={{ ...bottomLinkStyle, color: 'rgba(255,255,255,0.4)' }} className="footer-bottom-link">site by 6point</a>
           </div>
         </div>
       </div>

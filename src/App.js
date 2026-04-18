@@ -11,8 +11,11 @@ import { Footer } from './components/Footer';
 import { ClientLogin } from './components/ClientLogin';
 import { AgentDashboard } from './components/AgentDashboard';
 import { LegalPage } from './components/LegalPage';
+import { ServicePage } from './components/ServicePage';
 import { usePageMeta } from './usePageMeta';
 import './index.css';
+
+const SERVICE_SLUGS = new Set(['branding', 'web-design', 'growth-strategy', 'social-media']);
 
 /* Map the URL hash to a top-level view. Anything else falls through to the
    marketing home page (where the hash is just a section anchor like #services). */
@@ -21,6 +24,10 @@ const viewFromHash = (h) => {
   if (h === '#agent-dash')   return 'agent-dash';
   if (h === '#terms')        return 'terms';
   if (h === '#privacy')      return 'privacy';
+  if (h && h.startsWith('#service-')) {
+    const slug = h.slice('#service-'.length);
+    if (SERVICE_SLUGS.has(slug)) return `service:${slug}`;
+  }
   return 'home';
 };
 
@@ -55,6 +62,9 @@ function App() {
   if (view === 'agent-dash') return <AgentDashboard />;
   if (view === 'terms') return <LegalPage kind="terms" />;
   if (view === 'privacy') return <LegalPage kind="privacy" />;
+  if (view.startsWith('service:')) {
+    return <ServicePage slug={view.slice('service:'.length)} />;
+  }
 
   return (
     <div className="App">

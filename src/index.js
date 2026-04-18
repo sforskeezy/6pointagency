@@ -15,6 +15,15 @@ import reportWebVitals from './reportWebVitals';
 const convexUrl = process.env.REACT_APP_CONVEX_URL;
 const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
 
+/* Disable the browser's automatic scroll restoration. This SPA decides
+   the scroll position itself (e.g. service pages snap to the top on
+   mount) — without this, Chrome/Safari will sometimes restore the
+   previous scroll Y across hash navigations, which makes the new page
+   land mid-scroll instead of at the top. */
+if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
+  window.history.scrollRestoration = 'manual';
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>

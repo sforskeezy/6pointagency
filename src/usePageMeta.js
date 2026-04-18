@@ -30,6 +30,10 @@ const VIEW_META = {
   'agent-dash': { title: 'Agent Dashboard · 6POINT Designs',    color: BRAND },
   terms:        { title: 'Terms & Conditions · 6POINT Designs', color: INK },
   privacy:      { title: 'Privacy Policy · 6POINT Designs',     color: INK },
+  'service:branding':        { title: 'Branding · 6POINT Designs',        color: INK },
+  'service:web-design':      { title: 'Web Design · 6POINT Designs',      color: '#2563EB' },
+  'service:growth-strategy': { title: 'Growth Strategy · 6POINT Designs', color: BRAND },
+  'service:social-media':    { title: 'Social Media · 6POINT Designs',    color: BRAND_2 },
 };
 
 /* Per-section metadata for the home page. Keys match the actual element

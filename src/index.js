@@ -5,14 +5,26 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
-const convex = new ConvexReactClient(process.env.REACT_APP_CONVEX_URL);
+/* Only construct the Convex client if a deployment URL was provided at
+   build time. Without this guard, `new ConvexReactClient(undefined)`
+   throws synchronously in production environments where the env var
+   isn't set (e.g. a fresh Netlify deploy), which prevents React from
+   ever mounting and leaves the page blank.
+   To enable Convex on the live site, set REACT_APP_CONVEX_URL in your
+   Netlify project's Build & Deploy → Environment settings. */
+const convexUrl = process.env.REACT_APP_CONVEX_URL;
+const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <ConvexProvider client={convex}>
+    {convex ? (
+      <ConvexProvider client={convex}>
+        <App />
+      </ConvexProvider>
+    ) : (
       <App />
-    </ConvexProvider>
+    )}
   </React.StrictMode>
 );
 

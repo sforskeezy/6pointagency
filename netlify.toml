@@ -1,0 +1,19 @@
+[build]
+  command = "npm run build"
+  publish = "build"
+
+[build.environment]
+  # Pin a recent LTS so CRA + framer-motion build consistently. Bump as
+  # needed; just keep it on an even-numbered LTS line.
+  NODE_VERSION = "20"
+  # Treat CRA build warnings as warnings (not failures). Without this,
+  # any new ESLint warning will abort the deploy.
+  CI = "false"
+
+# CRA is a single-page app — every route must serve index.html so
+# client-side hash navigation (#client-login, #agent-dash, etc.) and
+# direct page refreshes work after deploy.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

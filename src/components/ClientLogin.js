@@ -223,7 +223,7 @@ export const ClientLogin = () => {
         </div>
 
         {/* Centered form */}
-        <div style={styles.formWrap}>
+        <div className="login-form-wrap" style={styles.formWrap}>
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -447,6 +447,13 @@ export const ClientLogin = () => {
           .login-right {
             min-height: 280px !important;
             order: -1;
+          }
+          /* Give the form room to breathe under the top bar — without
+             this the "Client Portal" eyebrow sits right beneath the
+             "Back to site" pill on phones. */
+          .login-page .login-form-wrap {
+            padding-top: 48px !important;
+            padding-bottom: 32px !important;
           }
         }
       `}</style>

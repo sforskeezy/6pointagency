@@ -1,68 +1,72 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import Lenis from 'lenis';
 import { Navbar } from './components/Navbar';
 import { HeroHeader } from './components/HeroHeader';
-import { LogoCarousel } from './components/LogoCarousel';
-import { ScrollRevealText } from './components/ScrollRevealText';
-import { AccordionSection } from './components/AccordionSection';
+import { Stats } from './components/Stats';
+import { Services } from './components/Services';
 import { OurWorkSection } from './components/OurWorkSection';
-import { Footer } from './components/Footer'; // Imports the new dark-mode Footer
+import { FAQ } from './components/FAQ';
+import { Contact } from './components/Contact';
+import { Footer } from './components/Footer';
+import { ClientLogin } from './components/ClientLogin';
+import { AgentDashboard } from './components/AgentDashboard';
+import { LegalPage } from './components/LegalPage';
+import { usePageMeta } from './usePageMeta';
 import './index.css';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import Lenis from 'lenis';
+
+/* Map the URL hash to a top-level view. Anything else falls through to the
+   marketing home page (where the hash is just a section anchor like #services). */
+const viewFromHash = (h) => {
+  if (h === '#client-login') return 'login';
+  if (h === '#agent-dash')   return 'agent-dash';
+  if (h === '#terms')        return 'terms';
+  if (h === '#privacy')      return 'privacy';
+  return 'home';
+};
 
 function App() {
-  const { scrollYProgress } = useScroll();
-  const globalGlow = useTransform(scrollYProgress, [0, 1], [0, 1]);
+  const [view, setView] = useState(viewFromHash(window.location.hash));
 
-  // Premium Momentum Scrolling Architecture
   useEffect(() => {
-    const lenis = new Lenis({
-      duration: 1.4, // Luxuriously slow inertia
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
-      smoothWheel: true,
-      wheelMultiplier: 1.2,
-      touchMultiplier: 2,
-    });
-
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
-
-    return () => lenis.destroy();
+    const onHash = () => setView(viewFromHash(window.location.hash));
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
+  /* Keep the browser tab title + favicon in sync with the active view
+     (and, on the home page, with whichever section is currently in view). */
+  usePageMeta(view);
+
+  // Smooth momentum scroll — disabled for touch / reduced motion
+  useEffect(() => {
+    if (view !== 'home') return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isTouch = 'ontouchstart' in window;
+    if (reduce || isTouch) return;
+
+    const lenis = new Lenis({ duration: 1.05, smoothWheel: true });
+    let raf;
+    const tick = (t) => { lenis.raf(t); raf = requestAnimationFrame(tick); };
+    raf = requestAnimationFrame(tick);
+    return () => { cancelAnimationFrame(raf); lenis.destroy(); };
+  }, [view]);
+
+  if (view === 'login') return <ClientLogin />;
+  if (view === 'agent-dash') return <AgentDashboard />;
+  if (view === 'terms') return <LegalPage kind="terms" />;
+  if (view === 'privacy') return <LegalPage kind="privacy" />;
+
   return (
-    <div className="App" style={{ position: 'relative' }}>
-      {/* High-End Ambient Scrolling Sage Green Glow */}
-      <motion.div 
-        style={{
-          position: 'fixed',
-          top: 0, left: 0, width: '100%', height: '100%',
-          background: 'radial-gradient(circle at 10% 90%, rgba(116,142,117,0.12) 0%, transparent 50%), radial-gradient(circle at 90% 10%, rgba(116,142,117,0.12) 0%, transparent 50%)',
-          opacity: globalGlow,
-          pointerEvents: 'none',
-          zIndex: 50 // Ensures glow overlays background but not crucial nav/interactions
-        }}
-      />
-      
+    <div className="App">
       <Navbar />
-      
-      <HeroHeader />
-
-      {/* Brands Ribbon - Distinct architectural cool-fade to break from #F2F2F2 visually without clashing */}
-      <div style={{ backgroundColor: '#EAECEA', position: 'relative', zIndex: 2 }}>
-        <LogoCarousel />
-      </div>
-
-      <div style={{ backgroundColor: '#F2F2F2', position: 'relative', zIndex: 1 }}>
-        <ScrollRevealText text="We are 6POINT. A digital design agency engineering fluid, dynamic, and perfectly optimized modern experiences." />
-        <AccordionSection />
-      </div>
-
-      <OurWorkSection />
-      
+      <main>
+        <HeroHeader />
+        <Stats />
+        <Services />
+        <OurWorkSection />
+        <FAQ />
+        <Contact />
+      </main>
       <Footer />
     </div>
   );

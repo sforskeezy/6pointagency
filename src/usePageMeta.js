@@ -27,6 +27,7 @@ const faviconHref = (color) => {
    tint so the browser tab visibly reflects where the user is. */
 const VIEW_META = {
   login:        { title: 'Client Login · 6POINT Designs',       color: INK },
+  'client-dash':{ title: 'Your Dashboard · 6POINT Designs',     color: BRAND },
   'agent-dash': { title: 'Agent Dashboard · 6POINT Designs',    color: BRAND },
   terms:        { title: 'Terms & Conditions · 6POINT Designs', color: INK },
   privacy:      { title: 'Privacy Policy · 6POINT Designs',     color: INK },

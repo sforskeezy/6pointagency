@@ -9,6 +9,7 @@ import { FAQ } from './components/FAQ';
 import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
 import { ClientLogin } from './components/ClientLogin';
+import { ClientDashboard } from './components/ClientDashboard';
 import { AgentDashboard } from './components/AgentDashboard';
 import { LegalPage } from './components/LegalPage';
 import { ServicePage } from './components/ServicePage';
@@ -21,6 +22,7 @@ const SERVICE_SLUGS = new Set(['branding', 'web-design', 'growth-strategy', 'soc
    marketing home page (where the hash is just a section anchor like #services). */
 const viewFromHash = (h) => {
   if (h === '#client-login') return 'login';
+  if (h === '#client-dash')  return 'client-dash';
   if (h === '#agent-dash')   return 'agent-dash';
   if (h === '#terms')        return 'terms';
   if (h === '#privacy')      return 'privacy';
@@ -59,6 +61,7 @@ function App() {
   }, [view]);
 
   if (view === 'login') return <ClientLogin />;
+  if (view === 'client-dash') return <ClientDashboard />;
   if (view === 'agent-dash') return <AgentDashboard />;
   if (view === 'terms') return <LegalPage kind="terms" />;
   if (view === 'privacy') return <LegalPage kind="privacy" />;

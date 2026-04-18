@@ -172,17 +172,22 @@ export const ClientLogin = () => {
     setStatus('checking');
     setErrorMsg('');
 
-    /* No backend yet — we simulate a short auth check, then show a
-       friendly "this portal is in early access" message. Wired up so
-       it's trivial to swap in a real API call later. */
+    /* No backend yet — we simulate a short auth check, then route to
+       the in-app client dashboard. The dashboard reads the email from
+       sessionStorage to personalize greeting + project name. Trivial
+       to swap in a real API call later — this branch becomes the
+       success handler of that fetch. */
     setTimeout(() => {
       if (!/\S+@\S+\.\S+/.test(form.email) || form.password.length < 4) {
         setStatus('error');
         setErrorMsg('Hmm, that doesn\u2019t look right. Double-check your email and password.');
         return;
       }
-      setStatus('error');
-      setErrorMsg('Client portal is in early access. Email hello@6pointdesigns.com to request your invite.');
+      try {
+        window.sessionStorage.setItem('clientEmail', form.email.trim());
+      } catch { /* sessionStorage may be blocked — dashboard handles fallback */ }
+      setStatus('success');
+      window.location.hash = '#client-dash';
     }, 700);
   };
 

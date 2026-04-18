@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import {
   ArrowRight, ArrowUpRight,
@@ -206,6 +206,43 @@ const ServiceHero = ({ s }) => {
      the cream page; for the others it picks up the service hue. */
   const watermarkColor = s.bg;
 
+  /* Watermark size + offsets are computed in JS off the live viewport
+     width rather than via CSS clamp / media queries. Framer Motion
+     applies inline `style` directly to the DOM and our @media rules
+     were losing the cascade fight even with !important — driving the
+     values from React state guarantees they take effect. */
+  const [vw, setVw] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 1280
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onResize = () => setVw(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  /* Three breakpoints:
+       - small mobile  (≤480): 200px asterisk, mostly tucked off-screen
+       - mobile/tablet (≤720): ~270px asterisk, more aggressively offset
+       - desktop:              the original generous 60vw watermark
+     The mobile sizes are deliberately small so the brand-pill icon
+     (also at the top of the stacked hero) gets visual breathing room
+     instead of sitting inside a ray of the watermark. */
+  let watermarkSize, watermarkTop, watermarkRight;
+  if (vw <= 480) {
+    watermarkSize = 200;
+    watermarkTop = -110;
+    watermarkRight = -110;
+  } else if (vw <= 720) {
+    watermarkSize = Math.round(Math.min(300, Math.max(220, vw * 0.7)));
+    watermarkTop = -Math.round(watermarkSize * 0.5);
+    watermarkRight = -Math.round(watermarkSize * 0.5);
+  } else {
+    watermarkSize = `clamp(440px, 60vw, 820px)`;
+    watermarkTop = `clamp(-160px, -10vw, -80px)`;
+    watermarkRight = `clamp(-200px, -12vw, -100px)`;
+  }
+
   return (
     <header
       className="service-hero"
@@ -224,15 +261,16 @@ const ServiceHero = ({ s }) => {
             instead of a solid silhouette. */}
       <motion.div
         aria-hidden
+        className="service-hero-watermark"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
         style={{
           position: 'absolute',
-          top: 'clamp(-160px, -10vw, -80px)',
-          right: 'clamp(-200px, -12vw, -100px)',
-          width: 'clamp(440px, 60vw, 820px)',
-          height: 'clamp(440px, 60vw, 820px)',
+          top: typeof watermarkTop === 'number' ? `${watermarkTop}px` : watermarkTop,
+          right: typeof watermarkRight === 'number' ? `${watermarkRight}px` : watermarkRight,
+          width: typeof watermarkSize === 'number' ? `${watermarkSize}px` : watermarkSize,
+          height: typeof watermarkSize === 'number' ? `${watermarkSize}px` : watermarkSize,
           color: watermarkColor,
           opacity: s.bg === 'var(--ink)' ? 0.05 : 0.09,
           pointerEvents: 'none',
@@ -338,7 +376,10 @@ const ServiceHero = ({ s }) => {
 
       <style>{`
         @media (max-width: 720px) {
-          .service-hero-grid { grid-template-columns: 1fr !important; }
+          .service-hero-grid {
+            grid-template-columns: 1fr !important;
+            gap: 28px !important;
+          }
         }
       `}</style>
     </header>

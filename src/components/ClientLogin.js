@@ -110,27 +110,49 @@ const WelcomeBadge = ({ size = 260 }) => {
   );
 };
 
-/* Pulsing sage status dot — same primitive as the hero CTA pill. */
-const StatusDot = ({ size = 8, color = 'var(--brand)' }) => (
-  <span style={{
-    position: 'relative', display: 'inline-flex',
-    alignItems: 'center', justifyContent: 'center',
-    width: size, height: size, flexShrink: 0,
-  }}>
-    <motion.span
-      aria-hidden
-      animate={{ scale: [1, 2.6], opacity: [0.55, 0] }}
-      transition={{ duration: 1.8, ease: 'easeOut', repeat: Infinity }}
-      style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: color }}
-    />
-    <span
-      style={{
-        position: 'relative', width: size, height: size, borderRadius: '50%',
-        background: color, boxShadow: '0 0 8px rgba(116,142,117,0.55)',
-      }}
-    />
-  </span>
-);
+/* Status dot — slowly cross-fades its color between the brand sage
+   and brand amber so the "Client Portal" eyebrow has a living,
+   breathing accent instead of a single static hue. The outward pulse
+   ring tracks the same color as the core. */
+const StatusDot = ({ size = 8 }) => {
+  const SAGE  = '#748E75';
+  const AMBER = '#D9B26A';
+  return (
+    <span style={{
+      position: 'relative', display: 'inline-flex',
+      alignItems: 'center', justifyContent: 'center',
+      width: size, height: size, flexShrink: 0,
+    }}>
+      <motion.span
+        aria-hidden
+        animate={{
+          scale:      [1, 2.6],
+          opacity:    [0.55, 0],
+          background: [SAGE, AMBER],
+        }}
+        transition={{
+          scale:      { duration: 1.8, ease: 'easeOut', repeat: Infinity },
+          opacity:    { duration: 1.8, ease: 'easeOut', repeat: Infinity },
+          background: { duration: 3.6, ease: 'easeInOut', repeat: Infinity, repeatType: 'reverse' },
+        }}
+        style={{ position: 'absolute', inset: 0, borderRadius: '50%' }}
+      />
+      <motion.span
+        animate={{
+          background:  [SAGE, AMBER],
+          boxShadow: [
+            '0 0 8px rgba(116,142,117,0.6)',
+            '0 0 10px rgba(217,178,106,0.65)',
+          ],
+        }}
+        transition={{ duration: 3.6, ease: 'easeInOut', repeat: Infinity, repeatType: 'reverse' }}
+        style={{
+          position: 'relative', width: size, height: size, borderRadius: '50%',
+        }}
+      />
+    </span>
+  );
+};
 
 /* ─────────────────────────── Main page ─────────────────────────── */
 
@@ -192,11 +214,11 @@ export const ClientLogin = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             style={styles.brandPill}
+            aria-label="6point.designs"
           >
             <span style={{ display: 'inline-flex', color: 'var(--brand)', lineHeight: 0 }}>
-              <LogoMark size={14} color="currentColor" />
+              <LogoMark size={16} color="currentColor" />
             </span>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>6point.designs</span>
           </motion.div>
         </div>
 
@@ -407,20 +429,6 @@ export const ClientLogin = () => {
           <WelcomeBadge size={300} />
         </div>
 
-        {/* Bottom-left brand wordmark + tagline */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          style={styles.rightFooter}
-        >
-          <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 22, color: '#fff' }}>
-            6point<span style={{ color: 'var(--brand-2)' }}>.</span>
-          </div>
-          <p style={styles.rightFooterCopy}>
-            Building brands &amp; websites that actually grow.
-          </p>
-        </motion.div>
       </div>
 
       {/* Inline responsive + tiny utility CSS scoped to this page */}
@@ -501,8 +509,8 @@ const styles = {
     transition: 'background .2s ease, color .2s ease',
   },
   brandPill: {
-    display: 'inline-flex', alignItems: 'center', gap: 8,
-    padding: '8px 14px',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: 36, height: 36,
     background: 'var(--bg-elev)',
     border: '1px solid var(--line)',
     borderRadius: 999,

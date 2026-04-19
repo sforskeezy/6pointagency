@@ -4,7 +4,7 @@ import {
   LayoutDashboard, BarChart3, FileText, Inbox, Settings, LogOut,
   ArrowUpRight, ArrowDownRight, Globe, Clock, Activity,
   Users, Eye, MousePointer2, Send, Search, Bell,
-  Smartphone, Monitor, TabletSmartphone, ExternalLink, Sparkles,
+  Smartphone, Monitor, TabletSmartphone, ExternalLink, Megaphone, Hammer,
 } from 'lucide-react';
 import { LogoMark } from './Logo';
 
@@ -541,7 +541,7 @@ const Sidebar = ({ active, setActive, projectName, leadsCount, onSignOut, isMobi
             fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
             textTransform: 'uppercase', color: C.brand,
           }}>
-            <Sparkles size={12} /> Studio
+            <Hammer size={12} /> Studio
           </div>
           <p style={{ margin: '8px 0 12px', fontSize: 13, lineHeight: 1.4, color: C.ink2 }}>
             Need a tweak or a new page? Drop the team a note.
@@ -1087,7 +1087,7 @@ export const ClientDashboard = () => {
 
           <Card>
             <SectionTitle
-              icon={<Sparkles size={14} />}
+              icon={<Megaphone size={14} />}
               label="From the studio"
               hint="this week"
             />

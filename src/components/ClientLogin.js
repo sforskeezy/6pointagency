@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowUpRight, ArrowLeft } from 'lucide-react';
+import { useMutation } from 'convex/react';
+import { api } from '../convex/_generated/api';
 import { LogoMark } from './Logo';
 import { MagneticButton } from './MagneticButton';
 
@@ -157,6 +159,7 @@ const StatusDot = ({ size = 8 }) => {
 /* ─────────────────────────── Main page ─────────────────────────── */
 
 export const ClientLogin = () => {
+  const loginWithPassword = useMutation(api.users.loginWithPassword);
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [focus, setFocus] = useState(null);
@@ -167,33 +170,51 @@ export const ClientLogin = () => {
 
   const update = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     setStatus('checking');
     setErrorMsg('');
 
-    /* No backend yet — we simulate a short auth check, then route to
-       the in-app client dashboard. The dashboard reads the email from
-       sessionStorage to personalize greeting + project name. Trivial
-       to swap in a real API call later — this branch becomes the
-       success handler of that fetch. */
-    setTimeout(() => {
-      const email = form.email.trim();
-      const pw = form.password;
+    const email = form.email.trim();
+    const pw = form.password;
 
-      if (!/\S+@\S+\.\S+/.test(email) || pw.length < 4) {
+    if (!/\S+@\S+\.\S+/.test(email) || pw.length < 4) {
+      setStatus('error');
+      setErrorMsg('Hmm, that doesn\u2019t look right. Double-check your email and password.');
+      return;
+    }
+
+    try {
+      /* Real auth call — the Convex mutation seeds the bootstrap
+         admin if needed, validates the password against the stored
+         PBKDF2 hash, and on success returns a signed session token
+         we store locally. The token (NOT the email) is what the
+         dashboards use to identify and authorise the user. */
+      const result = await loginWithPassword({ email, password: pw });
+      if (!result?.ok) {
         setStatus('error');
-        setErrorMsg('Hmm, that doesn\u2019t look right. Double-check your email and password.');
+        setErrorMsg(result?.error || 'Invalid email or password.');
         return;
       }
-
       try {
-        window.sessionStorage.setItem('clientEmail', email);
-      } catch { /* sessionStorage may be blocked — dashboard handles fallback */ }
+        window.localStorage.setItem('sessionToken', result.token);
+        window.localStorage.setItem('clientEmail', result.user.email);
+        window.localStorage.setItem('clientRole', result.user.role);
+        // Dashboards still read clientEmail from sessionStorage for
+        // personalisation; mirror it there for backwards compat.
+        window.sessionStorage.setItem('clientEmail', result.user.email);
+      } catch { /* storage may be blocked — dashboards handle fallback */ }
 
       setStatus('success');
-      window.location.hash = '#client-dash';
-    }, 700);
+      window.location.hash =
+        result.user.role === 'admin' ? '#admin-dash' : '#client-dash';
+    } catch (err) {
+      setStatus('error');
+      setErrorMsg(
+        err?.message ||
+          'Something went wrong signing you in. Please try again in a moment.',
+      );
+    }
   };
 
   return (

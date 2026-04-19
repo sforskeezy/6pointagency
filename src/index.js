@@ -5,15 +5,25 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
-/* Only construct the Convex client if a deployment URL was provided at
-   build time. Without this guard, `new ConvexReactClient(undefined)`
-   throws synchronously in production environments where the env var
-   isn't set (e.g. a fresh Netlify deploy), which prevents React from
-   ever mounting and leaves the page blank.
-   To enable Convex on the live site, set REACT_APP_CONVEX_URL in your
-   Netlify project's Build & Deploy → Environment settings. */
-const convexUrl = process.env.REACT_APP_CONVEX_URL;
-const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
+/* The site now leans on Convex for the contact form, login, and
+   admin dashboard, so the provider has to wrap every render. We
+   still tolerate a missing URL (we substitute an obviously bogus
+   one and log a warning) so the page mounts cleanly on a misconfigured
+   deploy — the Convex calls will just fail individually, which the
+   forms surface as inline errors instead of a white screen.
+   To wire this up on Netlify, set REACT_APP_CONVEX_URL in
+   Build & Deploy → Environment. */
+const convexUrl =
+  process.env.REACT_APP_CONVEX_URL || 'https://missing-convex-url.invalid';
+if (!process.env.REACT_APP_CONVEX_URL && typeof console !== 'undefined') {
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[6point] REACT_APP_CONVEX_URL is not set. Convex-backed features ' +
+      '(contact form, login, admin dashboard) will not work until the ' +
+      'env var is configured at build time.',
+  );
+}
+const convex = new ConvexReactClient(convexUrl);
 
 /* Disable the browser's automatic scroll restoration. This SPA decides
    the scroll position itself (e.g. service pages snap to the top on
@@ -27,13 +37,9 @@ if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    {convex ? (
-      <ConvexProvider client={convex}>
-        <App />
-      </ConvexProvider>
-    ) : (
+    <ConvexProvider client={convex}>
       <App />
-    )}
+    </ConvexProvider>
   </React.StrictMode>
 );
 

@@ -279,6 +279,7 @@ export const FullscreenMenu = ({ open, onClose }) => {
   const isViewHash = (href) =>
     href === '#client-login' ||
     href === '#client-dash' ||
+    href === '#admin-dash' ||
     href === '#terms' ||
     href === '#privacy' ||
     href.startsWith('#service-');

@@ -1,8 +1,68 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+/* Schema for the public marketing site + admin/client portal.
+
+   Three primary domains live here:
+
+   1. `submissions` — every contact form / inquiry that lands on the
+      home page. Read-only to clients, fully visible to admins.
+
+   2. `users` + `sessions` — lightweight email/password auth that
+      backs the login page. Passwords are stored salted + PBKDF2
+      hashed (see `convex/users.ts`). Sessions are random opaque
+      tokens kept here so privileged calls can verify the caller
+      server-side instead of trusting client-supplied roles.
+
+   3. `prospects` + `activityLog` — pre-existing tables that powered
+      the now-removed agent prospecting tool. Left in place so a
+      future re-enable is non-destructive; nothing in the live UI
+      reads from them. */
 export default defineSchema({
-  // Every business the agent discovers gets stored here
+  // ─── Marketing-site form submissions ────────────────────────────
+  submissions: defineTable({
+    name:      v.string(),
+    company:   v.string(),
+    email:     v.string(),
+    phone:     v.optional(v.string()),
+    services:  v.array(v.string()),
+    budget:    v.optional(v.string()),
+    timeline:  v.optional(v.string()),
+    message:   v.string(),
+    intent:    v.string(),                 // "project" | "pricing" | "hello"
+    source:    v.optional(v.string()),     // page / utm bucket
+    status:    v.string(),                 // "new" | "in_review" | "replied" | "archived"
+    referrer:  v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+  })
+    .index("by_status", ["status"])
+    .index("by_email",  ["email"]),
+
+  // ─── Auth: users + sessions ─────────────────────────────────────
+  users: defineTable({
+    email:       v.string(),
+    name:        v.optional(v.string()),
+    company:     v.optional(v.string()),
+    role:        v.string(),               // "admin" | "client"
+    passwordHash: v.string(),              // base64
+    salt:         v.string(),              // base64
+    createdAt:    v.number(),
+    createdBy:    v.optional(v.id("users")),
+    lastLoginAt:  v.optional(v.number()),
+  })
+    .index("by_email", ["email"])
+    .index("by_role",  ["role"]),
+
+  sessions: defineTable({
+    token:     v.string(),
+    userId:    v.id("users"),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+  })
+    .index("by_token",  ["token"])
+    .index("by_userId", ["userId"]),
+
+  // ─── Legacy: agent prospecting tool (UI removed, data preserved) ──
   prospects: defineTable({
     name: v.string(),
     address: v.string(),
@@ -12,7 +72,7 @@ export default defineSchema({
     category: v.string(),
     location: v.string(),
     hasWebsite: v.boolean(),
-    emailStatus: v.string(), // "pending" | "sent" | "failed" | "no-email" | "skipped"
+    emailStatus: v.string(),
     pitch: v.optional(v.string()),
     pitchGeneratedAt: v.optional(v.number()),
     emailSentAt: v.optional(v.number()),
@@ -23,10 +83,9 @@ export default defineSchema({
     .index("by_category", ["category"])
     .index("by_name_and_address", ["name", "address"]),
 
-  // Activity log for full audit trail
   activityLog: defineTable({
     text: v.string(),
-    type: v.string(), // "search" | "analyze" | "email" | "error" | "success"
+    type: v.string(),
   })
     .index("by_type", ["type"]),
 });

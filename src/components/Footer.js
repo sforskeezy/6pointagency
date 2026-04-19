@@ -44,6 +44,7 @@ const bottomLinkStyle = { color: 'rgba(255,255,255,0.55)' };
 const isViewHash = (href) =>
   href === '#client-login' ||
   href === '#client-dash' ||
+  href === '#admin-dash' ||
   href === '#terms' ||
   href === '#privacy' ||
   href.startsWith('#service-');

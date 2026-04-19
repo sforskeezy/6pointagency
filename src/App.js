@@ -10,6 +10,7 @@ import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
 import { ClientLogin } from './components/ClientLogin';
 import { ClientDashboard } from './components/ClientDashboard';
+import { AdminDashboard } from './components/AdminDashboard';
 import { LegalPage } from './components/LegalPage';
 import { ServicePage } from './components/ServicePage';
 import { usePageMeta } from './usePageMeta';
@@ -22,6 +23,7 @@ const SERVICE_SLUGS = new Set(['branding', 'web-design', 'growth-strategy', 'soc
 const viewFromHash = (h) => {
   if (h === '#client-login') return 'login';
   if (h === '#client-dash')  return 'client-dash';
+  if (h === '#admin-dash')   return 'admin-dash';
   if (h === '#terms')        return 'terms';
   if (h === '#privacy')      return 'privacy';
   if (h && h.startsWith('#service-')) {
@@ -60,6 +62,7 @@ function App() {
 
   if (view === 'login') return <ClientLogin />;
   if (view === 'client-dash') return <ClientDashboard />;
+  if (view === 'admin-dash') return <AdminDashboard />;
   if (view === 'terms') return <LegalPage kind="terms" />;
   if (view === 'privacy') return <LegalPage kind="privacy" />;
   if (view.startsWith('service:')) {

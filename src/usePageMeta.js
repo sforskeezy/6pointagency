@@ -28,6 +28,7 @@ const faviconHref = (color) => {
 const VIEW_META = {
   login:        { title: 'Client Login · 6POINT Designs',       color: INK },
   'client-dash':{ title: 'Your Dashboard · 6POINT Designs',     color: BRAND },
+  'admin-dash': { title: 'Studio Admin · 6POINT Designs',       color: INK },
   terms:        { title: 'Terms & Conditions · 6POINT Designs', color: INK },
   privacy:      { title: 'Privacy Policy · 6POINT Designs',     color: INK },
   'service:branding':        { title: 'Branding · 6POINT Designs',        color: INK },

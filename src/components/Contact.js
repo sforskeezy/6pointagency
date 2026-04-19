@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, CheckCircle2, AlertCircle, User, Building2 } from 'lucide-react';
+import { useMutation } from 'convex/react';
+import { api } from '../convex/_generated/api';
 import { MagneticButton } from './MagneticButton';
 
 const INTENTS = [
@@ -26,6 +28,7 @@ const STEP_LABELS = [
 ];
 
 export const Contact = () => {
+  const createSubmission = useMutation(api.submissions.create);
   const [intent, setIntent] = useState('project');
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
@@ -70,35 +73,31 @@ export const Contact = () => {
   const submit = async () => {
     setStatus('sending');
     setErrorMsg('');
-    const intentLabel = INTENTS.find((i) => i.id === intent)?.label || 'Inquiry';
-    const pitchBody = [
-      `New ${intentLabel.toLowerCase()} from the 6POINT site.`, ``,
-      `Name: ${form.name}`,
-      `Company: ${form.company}`,
-      `Email: ${form.email}`,
-      `Service interest: ${form.services.join(', ') || '—'}`,
-      `Budget: ${form.budget}`, ``,
-      `Message:`, form.message,
-    ].join('\n');
 
     try {
-      const res = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: 'hello@6pointdesigns.com',
-          businessName: form.company || form.name,
-          pitchBody,
-        }),
+      /* Persist to Convex so the admin dashboard can show real
+         submissions. The legacy `/api/send-email` Express endpoint
+         is intentionally retired here — admins read everything from
+         the Convex `submissions` table going forward. */
+      await createSubmission({
+        name:      form.name,
+        company:   form.company,
+        email:     form.email,
+        services:  form.services,
+        budget:    form.budget,
+        message:   form.message,
+        intent,
+        source:    'home_contact',
+        referrer:  typeof document !== 'undefined' ? document.referrer || undefined : undefined,
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Could not send your message.');
-      }
       setStatus('sent');
     } catch (err) {
       setStatus('error');
-      setErrorMsg(err.message || 'Something went wrong. Please try again or email us directly.');
+      setErrorMsg(
+        err?.message ||
+          'Something went wrong. Please try again or email us directly.',
+      );
     }
   };
 

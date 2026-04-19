@@ -113,8 +113,8 @@ export const Contact = () => {
             alignItems: 'flex-start',
           }}
         >
-          <div>
-            <h2 className="h2" style={{ margin: 0 }}>
+          <div className="contact-left">
+            <h2 className="h2 contact-heading" style={{ margin: 0 }}>
               Ready to go? <span className="italic-display">Let us know.</span>
             </h2>
 
@@ -146,17 +146,19 @@ export const Contact = () => {
               })}
             </div>
 
-            <p style={{ marginTop: 22, fontSize: 16, lineHeight: 1.65, color: 'var(--ink-2)', maxWidth: 420 }}>
+            <p className="contact-blurb" style={{ marginTop: 22, fontSize: 16, lineHeight: 1.65, color: 'var(--ink-2)', maxWidth: 420 }}>
               Send us some information about your project using the form to start a
               conversation, inquire about pricing, or just to say hello.
             </p>
 
-            <div style={{ marginTop: 28, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            <div className="contact-cta-row" style={{ marginTop: 28, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               <MagneticButton href="mailto:hello@6pointdesigns.com" variant="primary" size="md" strength={10} icon={<ArrowRight size={14} />} style={{ borderRadius: 4 }}>
-                hello@6pointdesigns.com
+                <span className="contact-cta-full">hello@6pointdesigns.com</span>
+                <span className="contact-cta-short">Email us</span>
               </MagneticButton>
               <MagneticButton href="tel:+18036695425" variant="outline" size="md" strength={10} icon={<ArrowRight size={14} />} style={{ borderRadius: 4 }}>
-                (803) 669-5425
+                <span className="contact-cta-full">(803) 669-5425</span>
+                <span className="contact-cta-short">Call us</span>
               </MagneticButton>
             </div>
           </div>
@@ -280,6 +282,22 @@ export const Contact = () => {
         @media (max-width: 540px) {
           .step-grid { grid-template-columns: 1fr !important; }
           .service-grid { grid-template-columns: 1fr !important; }
+        }
+
+        /* Compact the left column on mobile so the headline + paragraph +
+           email/phone CTAs don't feel like a wall of text. */
+        .contact-cta-short { display: none; }
+        .contact-cta-full  { display: inline; }
+        @media (max-width: 640px) {
+          .contact-heading {
+            font-size: clamp(34px, 9vw, 48px) !important;
+            line-height: 1.05 !important;
+          }
+          .contact-blurb { display: none; }
+          .contact-cta-row { margin-top: 20px !important; gap: 8px !important; }
+          .contact-cta-row > * { flex: 1 1 0; min-width: 0; }
+          .contact-cta-full  { display: none; }
+          .contact-cta-short { display: inline; }
         }
 
         /* Bring the icon to full ink color when its sibling input is focused

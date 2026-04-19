@@ -180,6 +180,7 @@ export const OurWorkSection = () => {
         </header>
 
         <div
+          className="work-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
@@ -190,7 +191,49 @@ export const OurWorkSection = () => {
             <Card key={w.title} w={w} i={i} />
           ))}
         </div>
+
+        <p className="work-swipe-hint">
+          Swipe to see more <span aria-hidden>→</span>
+        </p>
       </div>
+
+      <style>{`
+        .work-swipe-hint { display: none; }
+
+        @media (max-width: 760px) {
+          .work-grid {
+            display: flex !important;
+            grid-template-columns: none !important;
+            overflow-x: auto;
+            overflow-y: visible;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            gap: 14px !important;
+            /* extend to the viewport edges so cards can scroll past the
+               container's normal padding, then re-add equivalent inner
+               padding so the first card lines up with the section text */
+            margin: 0 calc(-1 * clamp(20px, 4vw, 40px));
+            padding: 4px clamp(20px, 4vw, 40px) 8px;
+            scroll-padding-left: clamp(20px, 4vw, 40px);
+          }
+          .work-grid::-webkit-scrollbar { display: none; }
+          .work-grid > * {
+            flex: 0 0 85%;
+            min-width: 85%;
+            scroll-snap-align: start;
+          }
+          .work-swipe-hint {
+            display: block;
+            margin: 12px 0 0;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--ink-4);
+          }
+        }
+      `}</style>
     </section>
   );
 };

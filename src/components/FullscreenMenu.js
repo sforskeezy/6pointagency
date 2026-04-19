@@ -278,7 +278,7 @@ export const FullscreenMenu = ({ open, onClose }) => {
      not scrolling to a section. */
   const isViewHash = (href) =>
     href === '#client-login' ||
-    href === '#agent-dash' ||
+    href === '#client-dash' ||
     href === '#terms' ||
     href === '#privacy' ||
     href.startsWith('#service-');

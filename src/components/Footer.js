@@ -43,7 +43,7 @@ const bottomLinkStyle = { color: 'rgba(255,255,255,0.55)' };
 /* Hashes that route to a dedicated view rather than a section on the home page. */
 const isViewHash = (href) =>
   href === '#client-login' ||
-  href === '#agent-dash' ||
+  href === '#client-dash' ||
   href === '#terms' ||
   href === '#privacy' ||
   href.startsWith('#service-');

@@ -178,14 +178,19 @@ export const ClientLogin = () => {
        to swap in a real API call later — this branch becomes the
        success handler of that fetch. */
     setTimeout(() => {
-      if (!/\S+@\S+\.\S+/.test(form.email) || form.password.length < 4) {
+      const email = form.email.trim();
+      const pw = form.password;
+
+      if (!/\S+@\S+\.\S+/.test(email) || pw.length < 4) {
         setStatus('error');
         setErrorMsg('Hmm, that doesn\u2019t look right. Double-check your email and password.');
         return;
       }
+
       try {
-        window.sessionStorage.setItem('clientEmail', form.email.trim());
+        window.sessionStorage.setItem('clientEmail', email);
       } catch { /* sessionStorage may be blocked — dashboard handles fallback */ }
+
       setStatus('success');
       window.location.hash = '#client-dash';
     }, 700);

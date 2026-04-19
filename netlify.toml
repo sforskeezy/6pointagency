@@ -11,7 +11,7 @@
   CI = "false"
 
 # CRA is a single-page app — every route must serve index.html so
-# client-side hash navigation (#client-login, #agent-dash, etc.) and
+# client-side hash navigation (#client-login, #client-dash, etc.) and
 # direct page refreshes work after deploy.
 [[redirects]]
   from = "/*"

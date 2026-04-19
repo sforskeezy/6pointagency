@@ -61,7 +61,7 @@ export const Navbar = () => {
     const h = window.location.hash;
     const onSubView =
       h === '#client-login' ||
-      h === '#agent-dash' ||
+      h === '#client-dash' ||
       h === '#terms' ||
       h === '#privacy' ||
       h.startsWith('#service-');

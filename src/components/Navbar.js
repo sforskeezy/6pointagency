@@ -7,6 +7,93 @@ import { FullscreenMenu } from './FullscreenMenu';
 
 const SCROLL_THRESHOLD = 80;
 
+/* Typewriter — characters reveal one at a time with a blinking caret.
+   Re-runs each time the component mounts (i.e. each scroll-down). */
+const Typewriter = ({ text, delay = 0, speed = 70, style }) => {
+  const [count, setCount] = useState(0);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    setCount(0);
+    setDone(false);
+    let interval;
+    const start = setTimeout(() => {
+      let i = 0;
+      interval = setInterval(() => {
+        i++;
+        setCount(i);
+        if (i >= text.length) {
+          clearInterval(interval);
+          setDone(true);
+        }
+      }, speed);
+    }, delay);
+    return () => {
+      clearTimeout(start);
+      if (interval) clearInterval(interval);
+    };
+  }, [text, delay, speed]);
+
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        fontFamily: 'var(--font-sans)',
+        fontWeight: 800,
+        fontSize: 13,
+        letterSpacing: '0.16em',
+        color: 'var(--logo-green)',
+        whiteSpace: 'nowrap',
+        ...style,
+      }}
+    >
+      <span>{text.slice(0, count)}</span>
+      {!done && (
+        <motion.span
+          animate={{ opacity: [1, 0, 1] }}
+          transition={{ duration: 0.85, repeat: Infinity, ease: 'linear' }}
+          style={{
+            display: 'inline-block',
+            width: 2,
+            height: '0.95em',
+            marginLeft: 2,
+            background: 'currentColor',
+            verticalAlign: 'middle',
+          }}
+        />
+      )}
+    </span>
+  );
+};
+
+/* The dot after DESIGNS — cycles through a few brand-friendly hues. */
+const ColorDot = () => (
+  <motion.span
+    animate={{
+      color: [
+        'var(--brand)',
+        'var(--brand-2)',
+        '#A35E1F',
+        '#2563EB',
+        '#9A3030',
+        'var(--brand)',
+      ],
+    }}
+    transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
+    style={{
+      display: 'inline-block',
+      marginLeft: 1,
+      fontFamily: 'var(--font-sans)',
+      fontWeight: 900,
+      fontSize: 18,
+      lineHeight: 0.6,
+    }}
+  >
+    .
+  </motion.span>
+);
+
 /* The Menu trigger button — same look in both states (top nav and floating). */
 const MenuButton = ({ onClick, dark = false }) => (
   <motion.button
@@ -148,30 +235,23 @@ export const Navbar = () => {
         )}
       </AnimatePresence>
 
-      {/* ─────────── SCROLLED: glass disc (back to top) ─────────── */}
+      {/* ─────────── SCROLLED: full liquid-glass nav bar ─────────── */}
       <AnimatePresence>
         {scrolled && (
-          <motion.button
-            key="glass-disc"
-            type="button"
-            onClick={goHome}
-            aria-label="Back to top"
-            initial={{ y: -80, opacity: 0, scale: 0.6 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: -80, opacity: 0, scale: 0.6 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 22 }}
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.94 }}
+          <motion.header
+            key="glass-bar"
+            initial={{ y: -80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -80, opacity: 0 }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             style={{
               position: 'fixed',
-              top: 18,
-              left: '50%',
-              transform: 'translateX(-50%)',
+              top: 12,
+              left: 'clamp(12px, 2vw, 24px)',
+              right: 'clamp(12px, 2vw, 24px)',
               zIndex: 100,
-              width: 64,
               height: 64,
-              borderRadius: '50%',
-              padding: 0,
+              borderRadius: 999,
               border: '1px solid rgba(255,255,255,0.7)',
               background: 'rgba(255, 255, 255, 0.42)',
               backdropFilter: 'saturate(220%) blur(28px)',
@@ -182,41 +262,99 @@ export const Navbar = () => {
                 0 16px 40px rgba(11,11,12,0.10),
                 0 2px 6px rgba(11,11,12,0.05)
               `,
-              cursor: 'pointer',
-              display: 'inline-flex',
+              display: 'grid',
+              gridTemplateColumns: '1fr auto 1fr',
               alignItems: 'center',
-              justifyContent: 'center',
+              padding: '0 clamp(16px, 2.4vw, 28px)',
+              overflow: 'hidden',
             }}
           >
-            <motion.span
-              animate={{ rotate: [0, 360] }}
-              transition={{
-                duration: 1,
-                ease: [0.65, 0, 0.35, 1],
-                repeat: Infinity,
-                repeatDelay: 2,
-              }}
-              style={{ display: 'inline-flex', transformOrigin: '50% 50%' }}
+            {/* LEFT — typewriter: 6POINT */}
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              style={{ justifySelf: 'start', minWidth: 0 }}
             >
-              <LogoMark size={28} color="var(--logo-green)" />
-            </motion.span>
-          </motion.button>
+              <Typewriter text="6POINT" delay={120} speed={70} />
+            </motion.div>
+
+            {/* CENTER — asterisk mark, doubles as back-to-top */}
+            <motion.button
+              type="button"
+              onClick={goHome}
+              aria-label="Back to top"
+              initial={{ scale: 0.5, rotate: -90, opacity: 0 }}
+              animate={{ scale: 1, rotate: 0, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 18, delay: 0.05 }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.92 }}
+              style={{
+                justifySelf: 'center',
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <motion.span
+                animate={{ rotate: [0, 360] }}
+                transition={{
+                  duration: 1.1,
+                  ease: [0.65, 0, 0.35, 1],
+                  repeat: Infinity,
+                  repeatDelay: 2.4,
+                }}
+                style={{ display: 'inline-flex', transformOrigin: '50% 50%' }}
+              >
+                <LogoMark size={32} color="var(--logo-green)" />
+              </motion.span>
+            </motion.button>
+
+            {/* RIGHT — typewriter: DESIGNS + color-changing dot + menu */}
+            <div
+              style={{
+                justifySelf: 'end',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 12,
+                minWidth: 0,
+              }}
+            >
+              <motion.span
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                style={{ display: 'inline-flex', alignItems: 'center' }}
+              >
+                <Typewriter text="DESIGNS" delay={520} speed={70} />
+                <ColorDot />
+              </motion.span>
+              <span className="hide-sm" style={{ display: 'inline-flex' }}>
+                <MenuButton onClick={() => setMenuOpen(true)} />
+              </span>
+            </div>
+          </motion.header>
         )}
       </AnimatePresence>
 
-      {/* ─────────── SCROLLED: floating menu button (top right, always-on) ─────────── */}
+      {/* Mobile-only: menu button below the bar so DESIGNS stays clean */}
       <AnimatePresence>
         {scrolled && (
           <motion.div
-            key="floating-menu-btn"
+            key="floating-menu-btn-sm"
+            className="show-sm"
             initial={{ y: -60, opacity: 0, scale: 0.7 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: -60, opacity: 0, scale: 0.7 }}
             transition={{ type: 'spring', stiffness: 320, damping: 22 }}
             style={{
               position: 'fixed',
-              top: 28,
-              right: 'clamp(20px, 3vw, 40px)',
+              top: 88,
+              right: 'clamp(12px, 3vw, 24px)',
               zIndex: 100,
             }}
           >

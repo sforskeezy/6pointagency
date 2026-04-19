@@ -358,11 +358,11 @@ export const HeroHeader = () => {
             margin: 0,
             fontFamily: 'var(--font-display)',
             fontWeight: 400,
-            fontSize: 'clamp(48px, 9vw, 132px)',
+            fontSize: 'clamp(40px, 6.6vw, 112px)',
             lineHeight: 0.98,
             letterSpacing: '-0.025em',
             color: 'var(--ink)',
-            maxWidth: 1180,
+            maxWidth: 1240,
           }}
         >
           <SplitHeadline

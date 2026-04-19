@@ -6,6 +6,7 @@ import {
   Search, Filter, Trash2, ExternalLink, ChevronRight, Plus,
   Check, X, Clock4, Archive, MailCheck, CircleAlert, Copy,
   AtSign, KeyRound, BadgeCheck, UserPlus, Globe, MessageSquare,
+  Send, Loader2,
 } from 'lucide-react';
 import { api } from '../convex/_generated/api';
 import { LogoMark } from './Logo';
@@ -276,7 +277,7 @@ const Sidebar = ({ active, setActive, counts, onSignOut, isMobile, adminEmail })
 
 /* ─────────────────────────── Submissions list ─────────────────────────── */
 
-const SubmissionsView = ({ submissions, counts, token, isMobile }) => {
+const SubmissionsView = ({ submissions, counts, token, isMobile, adminEmail }) => {
   const setStatus = useMutation(api.submissions.setStatus);
   const remove    = useMutation(api.submissions.remove);
 
@@ -442,12 +443,15 @@ const SubmissionsView = ({ submissions, counts, token, isMobile }) => {
         {open && (
           <SubmissionDrawer
             submission={open}
+            adminEmail={adminEmail}
+            isMobile={isMobile}
             onClose={() => setOpenId(null)}
             onStatus={(status) => setStatus({ token, id: open._id, status })}
             onDelete={async () => {
               await remove({ token, id: open._id });
               setOpenId(null);
             }}
+            onReplied={() => setStatus({ token, id: open._id, status: 'replied' })}
           />
         )}
       </AnimatePresence>
@@ -485,7 +489,7 @@ const EmptyState = ({ label }) => (
 
 /* ─────────────────────────── Submission detail drawer ─────────────────────────── */
 
-const SubmissionDrawer = ({ submission, onClose, onStatus, onDelete }) => {
+const SubmissionDrawer = ({ submission, adminEmail, isMobile, onClose, onStatus, onDelete, onReplied }) => {
   const [copied, setCopied] = useState(false);
   const copy = (t) => {
     try {
@@ -493,6 +497,51 @@ const SubmissionDrawer = ({ submission, onClose, onStatus, onDelete }) => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch { /* noop */ }
+  };
+
+  const firstName = (submission.name || '').trim().split(/\s+/)[0] || '';
+  const defaultSubject = `Re: your inquiry with 6POINT${submission.company ? ` — ${submission.company}` : ''}`;
+  const defaultBody =
+    `Thanks for reaching out${firstName ? `, ${firstName}` : ''}. I read through your note and would love to learn more.\n\n` +
+    `Could we set up a quick 15-minute call this week to dig into what you're after?\n\n` +
+    `— 6POINT`;
+
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [subject, setSubject] = useState(defaultSubject);
+  const [body, setBody] = useState(defaultBody);
+  const [sending, setSending] = useState(false);
+  const [sendMsg, setSendMsg] = useState(null); // { kind: 'ok' | 'err', text }
+
+  const sendReply = async () => {
+    if (!body.trim()) {
+      setSendMsg({ kind: 'err', text: 'Write a message before sending.' });
+      return;
+    }
+    setSending(true);
+    setSendMsg(null);
+    try {
+      const r = await fetch('/api/reply-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: submission.email,
+          subject: subject.trim() || defaultSubject,
+          body: body.trim(),
+          replyTo: adminEmail || 'sixpointagency@gmail.com',
+          recipientName: firstName || undefined,
+        }),
+      });
+      const json = await r.json().catch(() => ({}));
+      if (!r.ok || json.error) {
+        throw new Error(json.error || `Send failed (${r.status})`);
+      }
+      setSendMsg({ kind: 'ok', text: `Sent to ${submission.email}.` });
+      onReplied?.();
+    } catch (err) {
+      setSendMsg({ kind: 'err', text: err.message || 'Failed to send.' });
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -507,6 +556,184 @@ const SubmissionDrawer = ({ submission, onClose, onStatus, onDelete }) => {
         display: 'flex', justifyContent: 'flex-end',
       }}
     >
+      {/* Floating reply window — animates in to the LEFT of the drawer */}
+      <AnimatePresence>
+        {replyOpen && (
+          <motion.div
+            key="reply-window"
+            initial={{ opacity: 0, x: 24, scale: 0.96 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 24, scale: 0.96 }}
+            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'absolute',
+              right: isMobile ? 12 : 'calc(min(540px, 100vw) + 18px)',
+              top: isMobile ? 'auto' : 32,
+              bottom: isMobile ? 12 : 'auto',
+              transform: 'none',
+              width: isMobile ? 'calc(100vw - 24px)' : 'min(420px, calc(100vw - min(540px, 100vw) - 36px))',
+              maxHeight: isMobile ? '70vh' : 'calc(100vh - 64px)',
+              background: C.card,
+              border: `1px solid ${C.line}`,
+              borderRadius: 18,
+              boxShadow: '0 30px 60px -20px rgba(11,11,12,0.35), 0 8px 24px -8px rgba(11,11,12,0.18)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              zIndex: 1,
+            }}
+          >
+            <header style={{
+              padding: '14px 16px', borderBottom: `1px solid ${C.line}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+            }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 26, height: 26, borderRadius: 8,
+                  background: 'rgba(116,142,117,0.16)', color: C.brand,
+                }}>
+                  <Send size={13} />
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: C.ink,
+                    letterSpacing: '0.02em' }}>
+                    New reply
+                  </div>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
+                    textTransform: 'uppercase', color: C.ink4 }}>
+                    Sent via Resend
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => { if (!sending) { setReplyOpen(false); setSendMsg(null); } }}
+                aria-label="Close reply"
+                disabled={sending}
+                style={{
+                  width: 28, height: 28, borderRadius: 999,
+                  background: 'transparent', border: `1px solid ${C.line}`,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  color: C.ink3, cursor: sending ? 'not-allowed' : 'pointer',
+                }}
+              >
+                <X size={14} />
+              </button>
+            </header>
+
+            <div style={{
+              padding: 14, display: 'flex', flexDirection: 'column', gap: 10,
+              overflowY: 'auto', flex: 1, minHeight: 0,
+            }}>
+              <div style={{
+                display: 'flex', flexDirection: 'column', gap: 4,
+                padding: '10px 12px', borderRadius: 10,
+                background: C.bg, border: `1px solid ${C.line}`,
+              }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
+                  textTransform: 'uppercase', color: C.ink4 }}>
+                  To
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.ink,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {submission.name ? `${submission.name} · ` : ''}{submission.email}
+                </div>
+                <div style={{ fontSize: 11, color: C.ink4 }}>
+                  From <strong style={{ color: C.ink3 }}>HELLO@6POINTSOLUTIONS.COM</strong> · Replies go to{' '}
+                  <strong style={{ color: C.ink3 }}>{adminEmail || 'sixpointagency@gmail.com'}</strong>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <label style={{ fontSize: 10, fontWeight: 700, color: C.ink4,
+                  letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  Subject
+                </label>
+                <input
+                  type="text"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  disabled={sending}
+                  style={{
+                    padding: '9px 11px', borderRadius: 10,
+                    border: `1px solid ${C.line}`, background: C.bg,
+                    fontFamily: 'inherit', fontSize: 13, color: C.ink, outline: 'none',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flex: 1, minHeight: 0 }}>
+                <label style={{ fontSize: 10, fontWeight: 700, color: C.ink4,
+                  letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  Message
+                </label>
+                <textarea
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  disabled={sending}
+                  rows={isMobile ? 6 : 9}
+                  style={{
+                    padding: '10px 12px', borderRadius: 10,
+                    border: `1px solid ${C.line}`, background: C.bg,
+                    fontFamily: 'inherit', fontSize: 13, color: C.ink, outline: 'none',
+                    resize: 'vertical', lineHeight: 1.55, flex: 1, minHeight: 140,
+                  }}
+                />
+              </div>
+
+              {sendMsg && (
+                <div style={{
+                  fontSize: 12, fontWeight: 600,
+                  color: sendMsg.kind === 'ok' ? '#3F6541' : '#9A3030',
+                }}>
+                  {sendMsg.text}
+                </div>
+              )}
+            </div>
+
+            <footer style={{
+              padding: 12, borderTop: `1px solid ${C.line}`,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
+            }}>
+              <span style={{ fontSize: 11, color: C.ink4 }}>
+                {body.trim().length} chars
+              </span>
+              <button
+                onClick={sendReply}
+                disabled={sending}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '9px 14px', borderRadius: 999,
+                  background: C.ink, color: '#fff',
+                  fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  border: 'none', cursor: sending ? 'not-allowed' : 'pointer',
+                  opacity: sending ? 0.7 : 1,
+                }}
+              >
+                {sending ? (
+                  <>
+                    <motion.span
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      style={{ display: 'inline-flex' }}
+                    >
+                      <Loader2 size={12} />
+                    </motion.span>
+                    Sending…
+                  </>
+                ) : (
+                  <>
+                    <Send size={12} /> Send reply
+                  </>
+                )}
+              </button>
+            </footer>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <motion.div
         initial={{ x: 60, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
@@ -676,16 +903,34 @@ const SubmissionDrawer = ({ submission, onClose, onStatus, onDelete }) => {
             }}>
             <Trash2 size={12} /> Delete
           </button>
-          <a href={`mailto:${submission.email}`}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '9px 14px', borderRadius: 999,
-              background: C.ink, color: '#fff',
-              fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
-              textTransform: 'uppercase', textDecoration: 'none',
-            }}>
-            Reply via email <ExternalLink size={12} />
-          </a>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <a href={`mailto:${submission.email}`}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '9px 12px', borderRadius: 999,
+                background: 'transparent', color: C.ink2,
+                fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
+                textTransform: 'uppercase', textDecoration: 'none',
+                border: `1px solid ${C.line}`,
+              }}>
+              Open in mail <ExternalLink size={12} />
+            </a>
+            <button
+              onClick={() => setReplyOpen((v) => !v)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '9px 14px', borderRadius: 999,
+                background: replyOpen ? C.bgSoft : C.ink,
+                color: replyOpen ? C.ink : '#fff',
+                fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                border: replyOpen ? `1px solid ${C.line}` : 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <Send size={12} /> {replyOpen ? 'Close reply' : 'Reply via email'}
+            </button>
+          </div>
         </footer>
       </motion.div>
     </motion.div>
@@ -1143,6 +1388,7 @@ export const AdminDashboard = () => {
             counts={counts}
             token={token}
             isMobile={isMobile}
+            adminEmail={me.email}
           />
         )}
         {active === 'users' && (

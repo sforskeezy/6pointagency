@@ -9,6 +9,9 @@
  */
 
 import type * as agentDash from "../agentDash.js";
+import type * as emails from "../emails.js";
+import type * as http from "../http.js";
+import type * as messages from "../messages.js";
 import type * as submissions from "../submissions.js";
 import type * as users from "../users.js";
 
@@ -20,6 +23,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   agentDash: typeof agentDash;
+  emails: typeof emails;
+  http: typeof http;
+  messages: typeof messages;
   submissions: typeof submissions;
   users: typeof users;
 }>;

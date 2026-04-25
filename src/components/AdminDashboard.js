@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import {
   Inbox, Users, ShieldCheck, LogOut, Mail, Building2, Phone,
   Search, Filter, Trash2, ExternalLink, ChevronRight, Plus,
@@ -445,6 +445,7 @@ const SubmissionsView = ({ submissions, counts, token, isMobile, adminEmail }) =
             submission={open}
             adminEmail={adminEmail}
             isMobile={isMobile}
+            token={token}
             onClose={() => setOpenId(null)}
             onStatus={(status) => setStatus({ token, id: open._id, status })}
             onDelete={async () => {
@@ -489,7 +490,7 @@ const EmptyState = ({ label }) => (
 
 /* ─────────────────────────── Submission detail drawer ─────────────────────────── */
 
-const SubmissionDrawer = ({ submission, adminEmail, isMobile, onClose, onStatus, onDelete, onReplied }) => {
+const SubmissionDrawer = ({ submission, adminEmail, isMobile, token, onClose, onStatus, onDelete, onReplied }) => {
   const [copied, setCopied] = useState(false);
   const copy = (t) => {
     try {
@@ -498,6 +499,14 @@ const SubmissionDrawer = ({ submission, adminEmail, isMobile, onClose, onStatus,
       setTimeout(() => setCopied(false), 1200);
     } catch { /* noop */ }
   };
+
+  /* Live thread of every email tied to this submission — outbound
+     replies we've sent + any inbound replies Resend pushed back to
+     us via the inbound webhook. */
+  const messages = useQuery(
+    api.messages.listBySubmission,
+    token ? { token, submissionId: submission._id } : 'skip',
+  );
 
   const firstName = (submission.name || '').trim().split(/\s+/)[0] || '';
   const defaultSubject = `Re: your inquiry with 6POINT${submission.company ? ` — ${submission.company}` : ''}`;
@@ -512,33 +521,35 @@ const SubmissionDrawer = ({ submission, adminEmail, isMobile, onClose, onStatus,
   const [sending, setSending] = useState(false);
   const [sendMsg, setSendMsg] = useState(null); // { kind: 'ok' | 'err', text }
 
+  /* Reply sends go through a Convex action now — Resend is called
+     from Convex's cloud, not a local Express server, so the admin
+     dashboard works identically in dev and production. */
+  const sendReplyAction = useAction(api.emails.sendReply);
+
   const sendReply = async () => {
     if (!body.trim()) {
       setSendMsg({ kind: 'err', text: 'Write a message before sending.' });
       return;
     }
+    if (!token) {
+      setSendMsg({ kind: 'err', text: 'Session expired — please sign in again.' });
+      return;
+    }
     setSending(true);
     setSendMsg(null);
     try {
-      const r = await fetch('/api/reply-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: submission.email,
-          subject: subject.trim() || defaultSubject,
-          body: body.trim(),
-          replyTo: adminEmail || 'sixpointagency@gmail.com',
-          recipientName: firstName || undefined,
-        }),
+      await sendReplyAction({
+        token,
+        to:            submission.email,
+        subject:       subject.trim() || defaultSubject,
+        body:          body.trim(),
+        recipientName: firstName || undefined,
+        submissionId:  submission._id,
       });
-      const json = await r.json().catch(() => ({}));
-      if (!r.ok || json.error) {
-        throw new Error(json.error || `Send failed (${r.status})`);
-      }
       setSendMsg({ kind: 'ok', text: `Sent to ${submission.email}.` });
       onReplied?.();
     } catch (err) {
-      setSendMsg({ kind: 'err', text: err.message || 'Failed to send.' });
+      setSendMsg({ kind: 'err', text: err?.message || 'Failed to send.' });
     } finally {
       setSending(false);
     }
@@ -640,8 +651,8 @@ const SubmissionDrawer = ({ submission, adminEmail, isMobile, onClose, onStatus,
                   {submission.name ? `${submission.name} · ` : ''}{submission.email}
                 </div>
                 <div style={{ fontSize: 11, color: C.ink4 }}>
-                  From <strong style={{ color: C.ink3 }}>HELLO@6POINTSOLUTIONS.COM</strong> · Replies go to{' '}
-                  <strong style={{ color: C.ink3 }}>{adminEmail || 'sixpointagency@gmail.com'}</strong>
+                  From <strong style={{ color: C.ink3 }}>hello@6point.design</strong> · Replies go to{' '}
+                  <strong style={{ color: C.ink3 }}>hello@6point.design</strong>
                 </div>
               </div>
 
@@ -860,6 +871,12 @@ const SubmissionDrawer = ({ submission, adminEmail, isMobile, onClose, onStatus,
             </div>
           ) : null}
 
+          <ConversationThread
+            messages={messages}
+            submissionEmail={submission.email}
+            submissionName={submission.name}
+          />
+
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
               textTransform: 'uppercase', color: C.ink3, marginBottom: 8 }}>
@@ -934,6 +951,123 @@ const SubmissionDrawer = ({ submission, adminEmail, isMobile, onClose, onStatus,
         </footer>
       </motion.div>
     </motion.div>
+  );
+};
+
+/* ─────────────────────────── Conversation thread ─────────────────────────── */
+
+const fmtThreadTime = (ms) => {
+  const d = new Date(ms);
+  const sameDay = new Date().toDateString() === d.toDateString();
+  if (sameDay) {
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+  return d.toLocaleString('en-US', {
+    month: 'short', day: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+  });
+};
+
+const ConversationThread = ({ messages, submissionEmail, submissionName }) => {
+  const total = messages?.length ?? 0;
+  return (
+    <div>
+      <div style={{
+        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+        marginBottom: 8, gap: 8,
+      }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
+          textTransform: 'uppercase', color: C.ink3 }}>
+          Conversation
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: C.ink4 }}>
+          {messages === undefined
+            ? 'loading…'
+            : `${total} ${total === 1 ? 'message' : 'messages'}`}
+        </div>
+      </div>
+
+      {messages === undefined ? (
+        <div style={{
+          padding: 18, borderRadius: 12, background: C.bg,
+          border: `1px solid ${C.line}`, fontSize: 13, color: C.ink4,
+        }}>
+          Loading conversation…
+        </div>
+      ) : total === 0 ? (
+        <div style={{
+          padding: 18, borderRadius: 12, background: C.bg,
+          border: `1px dashed ${C.line}`, fontSize: 13, color: C.ink3, lineHeight: 1.55,
+        }}>
+          No replies yet — when you send an email below, it'll appear here.
+          Anything <strong>{submissionName || submissionEmail}</strong> writes
+          back will show up the moment Resend forwards it to us.
+        </div>
+      ) : (
+        <ol style={{
+          listStyle: 'none', margin: 0, padding: 0,
+          display: 'flex', flexDirection: 'column', gap: 10,
+        }}>
+          {messages.map((m) => (
+            <ThreadBubble key={m._id} message={m} />
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+};
+
+const ThreadBubble = ({ message }) => {
+  const isOut = message.direction === 'out';
+  const tone = isOut
+    ? { bg: 'rgba(116,142,117,0.10)', border: 'rgba(116,142,117,0.45)', label: 'You sent' }
+    : { bg: C.bg, border: C.line, label: 'They replied' };
+
+  return (
+    <li style={{
+      display: 'flex', flexDirection: 'column',
+      alignItems: isOut ? 'flex-end' : 'flex-start',
+    }}>
+      <div style={{
+        maxWidth: '92%', minWidth: '52%',
+        background: tone.bg,
+        border: `1px solid ${tone.border}`,
+        borderRadius: 14,
+        padding: '12px 14px',
+        display: 'flex', flexDirection: 'column', gap: 6,
+      }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 10,
+        }}>
+          <span style={{
+            fontSize: 10, fontWeight: 800, letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: isOut ? '#3F6541' : C.ink3,
+          }}>
+            {tone.label} · {message.fromAddress}
+          </span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: C.ink4 }}>
+            {fmtThreadTime(message.sentAt || message._creationTime)}
+          </span>
+        </div>
+        {message.subject && (
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.ink, lineHeight: 1.35 }}>
+            {message.subject}
+          </div>
+        )}
+        <div style={{
+          fontSize: 13, color: C.ink2, lineHeight: 1.55,
+          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+        }}>
+          {message.bodyText
+            ? message.bodyText
+            : message.snippet
+              ? message.snippet
+              : '(no body)'}
+        </div>
+      </div>
+    </li>
   );
 };
 

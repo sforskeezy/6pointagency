@@ -38,6 +38,38 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_email",  ["email"]),
 
+  // ─── Email thread per submission (outbound + inbound replies) ────
+  /* Every email we send to a submitter — and every reply they send
+     back via Resend's inbound feature — is appended here as a row.
+     `submissionId` is optional so that an inbound reply we couldn't
+     match (e.g. weird headers) can still be stored and surfaced as
+     "unmatched" later instead of being dropped on the floor.
+
+     `messageIdHeader` is the RFC-822 Message-ID we generate on every
+     outbound email; it embeds the submission id so when the recipient
+     replies, the inbound webhook can recover the submission id from
+     the `In-Reply-To` header without any DB lookup. */
+  messages: defineTable({
+    submissionId:      v.optional(v.id("submissions")),
+    direction:         v.string(), // "out" | "in"
+    fromAddress:       v.string(),
+    fromName:          v.optional(v.string()),
+    toAddresses:       v.array(v.string()),
+    subject:           v.optional(v.string()),
+    bodyText:          v.optional(v.string()),
+    bodyHtml:          v.optional(v.string()),
+    snippet:           v.optional(v.string()),
+    messageIdHeader:   v.optional(v.string()),
+    inReplyToHeader:   v.optional(v.string()),
+    referencesHeaders: v.optional(v.array(v.string())),
+    resendId:          v.optional(v.string()),
+    inboundEventId:    v.optional(v.string()),
+    sentAt:            v.number(),
+  })
+    .index("by_submission",      ["submissionId"])
+    .index("by_messageIdHeader", ["messageIdHeader"])
+    .index("by_inboundEventId",  ["inboundEventId"]),
+
   // ─── Auth: users + sessions ─────────────────────────────────────
   users: defineTable({
     email:       v.string(),

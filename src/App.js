@@ -13,14 +13,19 @@ import { ClientDashboard } from './components/ClientDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { LegalPage } from './components/LegalPage';
 import { ServicePage } from './components/ServicePage';
+import { AnimationTest } from './components/AnimationTest';
 import { usePageMeta } from './usePageMeta';
 import './index.css';
 
 const SERVICE_SLUGS = new Set(['branding', 'web-design', 'growth-strategy', 'social-media']);
 
-/* Map the URL hash to a top-level view. Anything else falls through to the
-   marketing home page (where the hash is just a section anchor like #services). */
-const viewFromHash = (h) => {
+/* Map the URL pathname + hash to a top-level view. Pathname wins over hash so
+   that real, shareable URLs like `/animationtest` work without forcing a `#`.
+   Anything else falls through to the marketing home page (where the hash is
+   just a section anchor like #services). */
+const viewFromLocation = (path, h) => {
+  if (path === '/animationtest' || path === '/animationtest/') return 'animationtest';
+  if (h === '#animationtest') return 'animationtest';
   if (h === '#client-login') return 'login';
   if (h === '#client-dash')  return 'client-dash';
   if (h === '#admin-dash')   return 'admin-dash';
@@ -34,12 +39,19 @@ const viewFromHash = (h) => {
 };
 
 function App() {
-  const [view, setView] = useState(viewFromHash(window.location.hash));
+  const [view, setView] = useState(
+    viewFromLocation(window.location.pathname, window.location.hash)
+  );
 
   useEffect(() => {
-    const onHash = () => setView(viewFromHash(window.location.hash));
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
+    const onChange = () =>
+      setView(viewFromLocation(window.location.pathname, window.location.hash));
+    window.addEventListener('hashchange', onChange);
+    window.addEventListener('popstate', onChange);
+    return () => {
+      window.removeEventListener('hashchange', onChange);
+      window.removeEventListener('popstate', onChange);
+    };
   }, []);
 
   /* Keep the browser tab title + favicon in sync with the active view
@@ -60,6 +72,7 @@ function App() {
     return () => { cancelAnimationFrame(raf); lenis.destroy(); };
   }, [view]);
 
+  if (view === 'animationtest') return <AnimationTest />;
   if (view === 'login') return <ClientLogin />;
   if (view === 'client-dash') return <ClientDashboard />;
   if (view === 'admin-dash') return <AdminDashboard />;

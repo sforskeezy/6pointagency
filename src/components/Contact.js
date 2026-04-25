@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, CheckCircle2, AlertCircle, User, Building2 } from 'lucide-react';
-import { useMutation } from 'convex/react';
+import { useAction, useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { MagneticButton } from './MagneticButton';
 
@@ -29,6 +29,7 @@ const STEP_LABELS = [
 
 export const Contact = () => {
   const createSubmission = useMutation(api.submissions.create);
+  const sendConfirmation = useAction(api.emails.sendConfirmation);
   const [intent, setIntent] = useState('project');
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
@@ -79,7 +80,7 @@ export const Contact = () => {
          submissions. The legacy `/api/send-email` Express endpoint
          is intentionally retired here — admins read everything from
          the Convex `submissions` table going forward. */
-      await createSubmission({
+      const created = await createSubmission({
         name:      form.name,
         company:   form.company,
         email:     form.email,
@@ -91,6 +92,26 @@ export const Contact = () => {
         referrer:  typeof document !== 'undefined' ? document.referrer || undefined : undefined,
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
       });
+
+      /* Fire-and-forget the auto-confirmation through Resend. The
+         action lives inside Convex now (not a local Express server),
+         so this works both in dev and on the deployed marketing site
+         without any port/proxy coordination. We still don't block the
+         success state on it — if Resend rejects (e.g. rate limit,
+         bounce), the submission is already in Convex and an admin
+         can follow up manually. */
+      sendConfirmation({
+        to:           form.email,
+        name:         form.name,
+        company:      form.company,
+        intent,
+        services:     form.services,
+        message:      form.message,
+        submissionId: created?.id,
+      }).catch((e) => {
+        console.warn('Confirmation email failed (non-blocking):', e);
+      });
+
       setStatus('sent');
     } catch (err) {
       setStatus('error');

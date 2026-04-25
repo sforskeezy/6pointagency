@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
 
@@ -35,10 +35,20 @@ const SERVICE_LINKS = [
   { label: 'Growth Strategy',  href: '#service-growth-strategy' },
   { label: 'Social Media',     href: '#service-social-media' },
   { label: 'Start a project',  href: '#contact' },
+  { label: 'Play the snake game', href: '#snake-game', game: true },
 ];
 
 const footerLinkStyle = { fontSize: 15, color: 'rgba(255,255,255,0.78)', textDecoration: 'none' };
 const bottomLinkStyle = { color: 'rgba(255,255,255,0.55)' };
+
+const SnakeIcon = ({ size = 18 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 15c0-2.2 1.8-4 4-4h8a3 3 0 0 0 0-6h-3" />
+    <path d="M13 5l2-2 2 2" />
+    <path d="M20 9c0 2.2-1.8 4-4 4H8a3 3 0 0 0 0 6h6" />
+    <circle cx="18.5" cy="6.5" r=".7" fill="currentColor" stroke="none" />
+  </svg>
+);
 
 /* Hashes that route to a dedicated view rather than a section on the home page. */
 const isViewHash = (href) =>
@@ -105,11 +115,10 @@ const navigateTo = (e, href) => {
   setTimeout(() => tryScroll(0), 60);
 };
 
-const FooterCol = ({ items, delay = 0 }) => (
+const FooterCol = ({ items, delay = 0, onSnakeOpen, clearing = false }) => (
   <motion.ul
     initial={{ opacity: 0, y: 16 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: '-10%' }}
+    animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.55, delay, ease: [0.16, 1, 0.3, 1] }}
     style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}
   >
@@ -117,17 +126,28 @@ const FooterCol = ({ items, delay = 0 }) => (
       <motion.li
         key={it.label}
         initial={{ opacity: 0, x: -10 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true, margin: '-10%' }}
-        transition={{ duration: 0.4, delay: delay + 0.05 + i * 0.04, ease: [0.16, 1, 0.3, 1] }}
+        animate={clearing ? { opacity: 0, x: -22, filter: 'blur(5px)' } : { opacity: 1, x: 0, filter: 'blur(0px)' }}
+        transition={{
+          duration: clearing ? 0.24 : 0.4,
+          delay: clearing ? i * 0.045 : delay + 0.05 + i * 0.04,
+          ease: [0.16, 1, 0.3, 1],
+        }}
       >
         <a
           href={it.href}
-          onClick={(e) => navigateTo(e, it.href)}
-          className="footer-link"
+          onClick={(e) => {
+            if (it.game) {
+              e.preventDefault();
+              onSnakeOpen?.();
+              return;
+            }
+            navigateTo(e, it.href);
+          }}
+          className={`footer-link${it.game ? ' footer-link--snake' : ''}`}
           style={footerLinkStyle}
         >
-          {it.label}
+          {it.game && <SnakeIcon />}
+          <span>{it.label}</span>
         </a>
       </motion.li>
     ))}
@@ -181,16 +201,207 @@ const AnimatedWordmark = ({ text }) => {
   );
 };
 
+const GRID_SIZE = 15;
+const CENTER = Math.floor(GRID_SIZE / 2);
+const START_SNAKE = [
+  { x: CENTER, y: CENTER },
+  { x: CENTER - 1, y: CENTER },
+  { x: CENTER - 2, y: CENTER },
+];
+const START_FOOD = { x: CENTER + 3, y: CENTER };
+
+const nextFood = (snake) => {
+  for (let y = 1; y < GRID_SIZE - 1; y++) {
+    for (let x = 1; x < GRID_SIZE - 1; x++) {
+      if (!snake.some((part) => part.x === x && part.y === y)) return { x, y };
+    }
+  }
+  return START_FOOD;
+};
+
+const SnakeGame = ({ active }) => {
+  const [snake, setSnake] = useState(START_SNAKE);
+  const [food, setFood] = useState(START_FOOD);
+  const [direction, setDirection] = useState({ x: 1, y: 0 });
+  const [running, setRunning] = useState(false);
+  const [score, setScore] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
+  const directionRef = useRef(direction);
+
+  useEffect(() => {
+    directionRef.current = direction;
+  }, [direction]);
+
+  const reset = useCallback(() => {
+    setSnake(START_SNAKE);
+    setFood(START_FOOD);
+    setDirection({ x: 1, y: 0 });
+    setScore(0);
+    setGameOver(false);
+    setRunning(true);
+  }, []);
+
+  const turn = useCallback((next) => {
+    const current = directionRef.current;
+    if (current.x + next.x === 0 && current.y + next.y === 0) return;
+    setDirection(next);
+    directionRef.current = next;
+    setRunning(true);
+  }, []);
+
+  useEffect(() => {
+    if (!active) return undefined;
+    const onKeyDown = (event) => {
+      const keys = {
+        ArrowUp: { x: 0, y: -1 },
+        ArrowDown: { x: 0, y: 1 },
+        ArrowLeft: { x: -1, y: 0 },
+        ArrowRight: { x: 1, y: 0 },
+      };
+      if (!keys[event.key]) return;
+      event.preventDefault();
+      turn(keys[event.key]);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [active, turn]);
+
+  useEffect(() => {
+    if (!active || !running || gameOver) return undefined;
+    const timer = setInterval(() => {
+      setSnake((current) => {
+        const head = current[0];
+        const move = directionRef.current;
+        const nextHead = { x: head.x + move.x, y: head.y + move.y };
+        const hitWall =
+          nextHead.x < 0 || nextHead.x >= GRID_SIZE || nextHead.y < 0 || nextHead.y >= GRID_SIZE;
+        const hitSelf = current.some((part) => part.x === nextHead.x && part.y === nextHead.y);
+
+        if (hitWall || hitSelf) {
+          setGameOver(true);
+          setRunning(false);
+          return current;
+        }
+
+        const ate = nextHead.x === food.x && nextHead.y === food.y;
+        const updated = [nextHead, ...current];
+        if (!ate) updated.pop();
+        if (ate) {
+          setScore((s) => s + 1);
+          setFood(nextFood(updated));
+        }
+        return updated;
+      });
+    }, 135);
+    return () => clearInterval(timer);
+  }, [active, food, gameOver, running]);
+
+  return (
+    <motion.div
+      id="snake-game"
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-10%' }}
+      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      className="snake-game"
+    >
+      <div className="snake-game__intro">
+        <div className="snake-game__eyebrow"><SnakeIcon /> Tiny footer break</div>
+        <h3>Play snake.</h3>
+        <p>Use arrow keys on desktop or the buttons on mobile. Eat the gold dot. Don’t hit the wall.</p>
+        <div className="snake-game__actions">
+          <button type="button" onClick={reset}>{gameOver ? 'Play again' : running ? 'Restart' : 'Start'}</button>
+          <span>Score: {score}</span>
+        </div>
+      </div>
+
+      <div className="snake-game__board-wrap">
+        <div
+          className="snake-game__board"
+          style={{
+            gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
+            gridTemplateRows: `repeat(${GRID_SIZE}, 1fr)`,
+          }}
+          aria-label="Snake game board"
+        >
+          {Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, index) => {
+            const x = index % GRID_SIZE;
+            const y = Math.floor(index / GRID_SIZE);
+            const segmentIndex = snake.findIndex((part) => part.x === x && part.y === y);
+            const isFood = food.x === x && food.y === y;
+            return (
+              <span
+                key={`${x}-${y}`}
+                className={[
+                  'snake-game__cell',
+                  segmentIndex === 0 ? 'is-head' : '',
+                  segmentIndex > 0 ? 'is-snake' : '',
+                  isFood ? 'is-food' : '',
+                ].join(' ')}
+              />
+            );
+          })}
+        </div>
+        {gameOver && <div className="snake-game__overlay">Game over</div>}
+      </div>
+
+      <div className="snake-game__controls" aria-label="Snake mobile controls">
+        <button type="button" onClick={() => turn({ x: 0, y: -1 })}>↑</button>
+        <div>
+          <button type="button" onClick={() => turn({ x: -1, y: 0 })}>←</button>
+          <button type="button" onClick={() => turn({ x: 1, y: 0 })}>→</button>
+        </div>
+        <button type="button" onClick={() => turn({ x: 0, y: 1 })}>↓</button>
+      </div>
+    </motion.div>
+  );
+};
+
 export const Footer = () => {
   const year = new Date().getFullYear();
+  const [snakeMode, setSnakeMode] = useState('idle');
+  const footerCardRef = useRef(null);
+  const lastScrollYRef = useRef(0);
+  const openSnake = () => {
+    if (snakeMode !== 'idle') return;
+    setSnakeMode('clearing');
+    setTimeout(() => {
+      setSnakeMode('playing');
+      footerCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 520);
+  };
+
+  useEffect(() => {
+    if (snakeMode !== 'playing') return undefined;
+    lastScrollYRef.current = window.scrollY;
+    const activatedAt = Date.now();
+    const onScroll = () => {
+      const current = window.scrollY;
+      if (Date.now() - activatedAt > 700 && current < lastScrollYRef.current - 12) {
+        setSnakeMode('idle');
+      }
+      lastScrollYRef.current = current;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [snakeMode]);
+
+  const snakeClearing = snakeMode === 'clearing';
+  const snakePlaying = snakeMode === 'playing';
+
   return (
     <footer style={{ background: '#0B0B0C', color: 'rgba(255,255,255,0.85)', paddingTop: 'clamp(56px, 8vw, 96px)', paddingBottom: 28 }}>
       <div className="container">
         <div
-          className="footer-top"
-          style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.35fr)', gap: 56, alignItems: 'flex-start' }}
+          className={`footer-top${snakePlaying ? ' footer-top--snake' : ''}`}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: snakePlaying ? '1fr' : 'minmax(0, 1fr) minmax(0, 1.35fr)',
+            gap: snakePlaying ? 28 : 56,
+            alignItems: 'flex-start',
+          }}
         >
-          <div>
+          {!snakePlaying && <div>
             <div style={{
               fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 400,
               fontSize: 'clamp(40px, 5vw, 64px)', lineHeight: 0.95, letterSpacing: '-0.02em', color: '#fff',
@@ -243,40 +454,47 @@ export const Footer = () => {
                 </span>
               </a>
             </motion.div>
-          </div>
+          </div>}
 
           <div
-            className="footer-card"
+            ref={footerCardRef}
+            className={`footer-card${snakePlaying ? ' footer-card--snake' : ''}`}
             style={{
               background: '#161618', borderRadius: 16, padding: 'clamp(28px, 3vw, 40px)',
-              display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr', gap: 40,
+              display: 'grid', gridTemplateColumns: snakePlaying ? '1fr' : '1fr 1.2fr 1fr', gap: 40,
+              width: '100%',
             }}
           >
-            <FooterCol items={NAV_LINKS} delay={0.1} />
-            <FooterCol items={SERVICE_LINKS} delay={0.18} />
+            {snakePlaying ? (
+              <SnakeGame active={snakePlaying} />
+            ) : (
+              <>
+                <FooterCol items={NAV_LINKS} delay={0.1} clearing={snakeClearing} />
+                <FooterCol items={SERVICE_LINKS} delay={0.18} onSnakeOpen={openSnake} clearing={snakeClearing} />
 
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-10%' }}
-              transition={{ duration: 0.55, delay: 0.26, ease: [0.16, 1, 0.3, 1] }}
-              style={{ display: 'flex', flexDirection: 'column', gap: 18 }}
-            >
-              <h4 style={{
-                margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic',
-                fontWeight: 400, fontSize: 28, color: '#fff', lineHeight: 1, letterSpacing: '-0.01em',
-              }}>
-                Say hey!
-              </h4>
-              <a href="tel:+18036695425" className="footer-link" style={footerLinkStyle}>(803) 669-5425</a>
-              <a href="mailto:hello@6pointdesigns.com" className="footer-link" style={footerLinkStyle}>hello@6pointdesigns.com</a>
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={snakeClearing ? { opacity: 0, x: -22, filter: 'blur(5px)' } : { opacity: 1, x: 0, filter: 'blur(0px)' }}
+                  transition={{ duration: snakeClearing ? 0.26 : 0.55, delay: snakeClearing ? 0.22 : 0.26, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: 18 }}
+                >
+                  <h4 className="say-hey-wave" style={{
+                    margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic',
+                    fontWeight: 400, fontSize: 28, lineHeight: 1, letterSpacing: '-0.01em',
+                  }}>
+                    Say hey!
+                  </h4>
+                  <a href="tel:+18036695425" className="footer-link" style={footerLinkStyle}>(803) 669-5425</a>
+                  <a href="mailto:hello@6pointdesigns.com" className="footer-link" style={footerLinkStyle}>hello@6pointdesigns.com</a>
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                <SocialIcon href="https://facebook.com" label="Facebook"><FacebookIcon /></SocialIcon>
-                <SocialIcon href="https://instagram.com" label="Instagram"><InstagramIcon /></SocialIcon>
-                <SocialIcon href="https://linkedin.com" label="LinkedIn"><LinkedinIcon /></SocialIcon>
-              </div>
-            </motion.div>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                    <SocialIcon href="https://facebook.com" label="Facebook"><FacebookIcon /></SocialIcon>
+                    <SocialIcon href="https://instagram.com" label="Instagram"><InstagramIcon /></SocialIcon>
+                    <SocialIcon href="https://linkedin.com" label="LinkedIn"><LinkedinIcon /></SocialIcon>
+                  </div>
+                </motion.div>
+              </>
+            )}
           </div>
         </div>
 
@@ -352,6 +570,197 @@ export const Footer = () => {
           transition: color .2s ease;
         }
         .footer-bottom-link:hover { color: #fff; }
+        .footer-link--snake {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          color: var(--brand-2) !important;
+          font-weight: 800;
+        }
+        .footer-link--snake:hover { padding-left: 22px; color: #fff !important; }
+
+        .say-hey-wave {
+          position: relative;
+          display: inline-block;
+          width: fit-content;
+          color: #fff;
+          overflow: hidden;
+          cursor: default;
+        }
+        .say-hey-wave::before {
+          content: 'Say hey!';
+          position: absolute;
+          inset: 0;
+          color: var(--brand-2);
+          transform: translateY(110%);
+          clip-path: polygon(
+            0% 52%, 8% 44%, 16% 51%, 24% 42%, 32% 50%, 40% 44%,
+            48% 53%, 56% 45%, 64% 51%, 72% 43%, 80% 50%, 88% 45%,
+            100% 52%, 100% 100%, 0% 100%
+          );
+          transition: transform .75s cubic-bezier(0.16, 1, 0.3, 1);
+          animation: yellowWaveDrift 1.9s linear infinite;
+        }
+        .say-hey-wave:hover::before {
+          transform: translateY(0%);
+        }
+        @keyframes yellowWaveDrift {
+          0% {
+            clip-path: polygon(
+              0% 54%, 8% 44%, 16% 51%, 24% 42%, 32% 50%, 40% 44%,
+              48% 53%, 56% 45%, 64% 51%, 72% 43%, 80% 50%, 88% 45%,
+              100% 52%, 100% 100%, 0% 100%
+            );
+          }
+          50% {
+            clip-path: polygon(
+              0% 45%, 8% 53%, 16% 43%, 24% 51%, 32% 44%, 40% 52%,
+              48% 45%, 56% 54%, 64% 43%, 72% 51%, 80% 44%, 88% 53%,
+              100% 45%, 100% 100%, 0% 100%
+            );
+          }
+          100% {
+            clip-path: polygon(
+              0% 54%, 8% 44%, 16% 51%, 24% 42%, 32% 50%, 40% 44%,
+              48% 53%, 56% 45%, 64% 51%, 72% 43%, 80% 50%, 88% 45%,
+              100% 52%, 100% 100%, 0% 100%
+            );
+          }
+        }
+
+        .snake-game {
+          grid-column: 1 / -1;
+          width: 100%;
+          min-height: clamp(430px, 44vw, 560px);
+          display: grid;
+          grid-template-columns: minmax(230px, 0.32fr) minmax(560px, 1fr) minmax(120px, 0.18fr);
+          gap: clamp(24px, 4vw, 56px);
+          align-items: stretch;
+          padding: clamp(26px, 4vw, 48px);
+          border-radius: 24px;
+          background: rgba(255,255,255,0.055);
+          border: 1px solid rgba(255,255,255,0.10);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 18px 40px rgba(0,0,0,0.18);
+        }
+        .snake-game__intro {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        .snake-game__eyebrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          color: var(--brand-2);
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+        }
+        .snake-game h3 {
+          margin: 16px 0 0;
+          font-family: var(--font-display);
+          font-style: italic;
+          font-weight: 400;
+          font-size: clamp(40px, 5vw, 72px);
+          line-height: 0.95;
+          letter-spacing: -0.03em;
+          color: #fff;
+        }
+        .snake-game p {
+          margin: 16px 0 0;
+          max-width: 390px;
+          color: rgba(255,255,255,0.64);
+          font-size: 14px;
+          line-height: 1.55;
+        }
+        .snake-game__actions {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 12px;
+          margin-top: 22px;
+        }
+        .snake-game__actions button,
+        .snake-game__controls button {
+          border: 1px solid rgba(255,255,255,0.16);
+          background: #fff;
+          color: var(--ink);
+          border-radius: 999px;
+          font-weight: 800;
+          cursor: pointer;
+          transition: transform .18s ease, background .18s ease;
+        }
+        .snake-game__actions button {
+          padding: 11px 18px;
+          font-size: 13px;
+        }
+        .snake-game__actions span {
+          color: rgba(255,255,255,0.65);
+          font-size: 13px;
+          font-weight: 800;
+        }
+        .snake-game__actions button:hover,
+        .snake-game__controls button:hover { transform: translateY(-1px); background: var(--brand-2); }
+        .snake-game__board-wrap {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          min-height: 360px;
+          border-radius: 20px;
+          padding: 12px;
+          background: #0B0B0C;
+          border: 1px solid rgba(255,255,255,0.12);
+        }
+        .snake-game__board {
+          width: 100%;
+          height: 100%;
+          display: grid;
+          gap: 3px;
+        }
+        .snake-game__cell {
+          border-radius: 4px;
+          background: rgba(255,255,255,0.06);
+        }
+        .snake-game__cell.is-snake,
+        .snake-game__cell.is-head {
+          background: var(--brand);
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.22);
+        }
+        .snake-game__cell.is-head {
+          background: #fff;
+          border-radius: 8px;
+        }
+        .snake-game__cell.is-food {
+          background: var(--brand-2);
+          border-radius: 999px;
+          box-shadow: 0 0 14px rgba(217,178,106,0.55);
+        }
+        .snake-game__overlay {
+          position: absolute;
+          inset: 12px;
+          border-radius: 16px;
+          background: rgba(11,11,12,0.72);
+          color: #fff;
+          display: grid;
+          place-items: center;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .snake-game__controls {
+          display: grid;
+          align-content: center;
+          justify-items: center;
+          gap: 10px;
+        }
+        .snake-game__controls div { display: flex; gap: 18px; }
+        .snake-game__controls button {
+          width: 58px;
+          height: 58px;
+          font-size: 24px;
+          touch-action: manipulation;
+        }
 
         /* ── Neon "OPEN" sign — hand-built CSS replica of the storefront LED look.
               Bright orange-red text with stacked text-shadow for the gas-tube glow,
@@ -424,10 +833,26 @@ export const Footer = () => {
         @media (max-width: 880px) {
           .footer-top { grid-template-columns: 1fr !important; gap: 32px !important; }
           .footer-card { grid-template-columns: 1fr 1fr !important; }
+          .footer-card--snake { grid-template-columns: 1fr !important; }
+          .snake-game {
+            grid-template-columns: 1fr;
+            justify-items: stretch;
+            min-height: auto;
+          }
+          .snake-game__board-wrap {
+            margin: 0 auto;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1;
+            max-width: 560px;
+            min-height: 0;
+          }
         }
         @media (max-width: 540px) {
           .footer-card { grid-template-columns: 1fr !important; gap: 28px !important; }
           .footer-bottom { flex-direction: column; align-items: flex-start; }
+          .snake-game { padding: 20px; border-radius: 18px; }
+          .snake-game__controls button { width: 52px; height: 52px; }
         }
       `}</style>
     </footer>

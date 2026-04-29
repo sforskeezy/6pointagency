@@ -210,6 +210,7 @@ export const FAQ = () => {
   return (
     <section
       id="faq"
+      className="ambient-section ambient-section--faq"
       style={{
         background: 'var(--bg)',
         padding: 'clamp(72px, 10vw, 140px) 0',

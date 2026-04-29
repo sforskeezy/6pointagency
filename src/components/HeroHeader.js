@@ -126,46 +126,42 @@ const FloatingMark = ({
   </motion.span>
 );
 
-/* Soft, breathing glows that sit behind the hero — big saturated sage on
-   the right, smaller warm amber on the lower left, plus a tiny bright
-   accent. Out of phase so it never feels mechanical. */
+/* Very light ambient wash so the hero connects to the gradient below
+   without competing with the heavier color band in the stats section. */
 const HeroGlow = () => (
   <>
-    {/* Soft sage wash — top right */}
     <motion.div
       aria-hidden
-      animate={{ scale: [1, 1.1, 1], opacity: [0.32, 0.5, 0.32] }}
-      transition={{ duration: 8, ease: 'easeInOut', repeat: Infinity }}
+      animate={{ opacity: [0.18, 0.28, 0.18], scale: [1, 1.08, 1] }}
+      transition={{ duration: 10, ease: 'easeInOut', repeat: Infinity }}
       style={{
         position: 'absolute',
-        top: '-12%',
-        right: '-8%',
-        width: 'clamp(420px, 58vw, 880px)',
-        height: 'clamp(420px, 58vw, 880px)',
+        top: '-18%',
+        left: '-14%',
+        width: 'clamp(380px, 48vw, 700px)',
+        height: 'clamp(380px, 48vw, 700px)',
         borderRadius: '50%',
         background:
-          'radial-gradient(circle at 50% 50%, rgba(150,178,150,0.55) 0%, rgba(150,178,150,0.22) 35%, rgba(150,178,150,0) 70%)',
-        filter: 'blur(60px)',
+          'radial-gradient(circle, rgba(var(--glow-cool),0.42) 0%, rgba(var(--glow-cool),0.14) 42%, rgba(var(--glow-cool),0) 72%)',
+        filter: 'blur(72px)',
         pointerEvents: 'none',
         willChange: 'transform, opacity',
       }}
     />
-
-    {/* Warm amber glow — bottom left, slightly more present */}
     <motion.div
       aria-hidden
-      animate={{ scale: [1, 1.18, 1], opacity: [0.40, 0.62, 0.40] }}
-      transition={{ duration: 9.5, ease: 'easeInOut', repeat: Infinity, delay: 2.2 }}
+      animate={{ opacity: [0.14, 0.24, 0.14], scale: [1, 1.12, 1] }}
+      transition={{ duration: 12, ease: 'easeInOut', repeat: Infinity, delay: 1.8 }}
       style={{
         position: 'absolute',
-        bottom: '-15%',
-        left: '-8%',
-        width: 'clamp(360px, 46vw, 720px)',
-        height: 'clamp(360px, 46vw, 720px)',
+        top: '22%',
+        right: '-18%',
+        width: 'clamp(340px, 40vw, 620px)',
+        height: 'clamp(340px, 40vw, 620px)',
         borderRadius: '50%',
         background:
-          'radial-gradient(circle at 50% 50%, rgba(217,178,106,0.55) 0%, rgba(217,178,106,0.20) 38%, rgba(217,178,106,0) 70%)',
-        filter: 'blur(70px)',
+          'radial-gradient(circle, rgba(var(--glow-amber),0.36) 0%, rgba(var(--glow-amber),0.12) 40%, rgba(var(--glow-amber),0) 72%)',
+        filter: 'blur(80px)',
         pointerEvents: 'none',
         willChange: 'transform, opacity',
       }}

@@ -21,6 +21,7 @@ const WORK = [
     tag: 'Wellness',
     title: 'Mint — full brand & ecommerce launch',
     image: '/work/mint-reference.webp',
+    blurWindow: true,
     href: '#contact',
   },
 ];
@@ -92,7 +93,24 @@ const Card = ({ w, i }) => {
             alt={w.title}
             whileHover={{ scale: 1.05 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block',
+              filter: w.blurWindow ? 'blur(14px)' : 'none',
+            }}
+          />
+        )}
+        {w.blurWindow && (
+          <span
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(250,250,248,0.16)',
+              pointerEvents: 'none',
+            }}
           />
         )}
         <span

@@ -260,6 +260,7 @@ export const LegalPage = ({ kind = 'terms' }) => {
       <main>
         {/* ───────── Hero ───────── */}
         <section
+          className="ambient-section ambient-section--service-hero"
           style={{
             position: 'relative',
             background: 'var(--bg)',
@@ -354,6 +355,7 @@ export const LegalPage = ({ kind = 'terms' }) => {
 
         {/* ───────── Body ───────── */}
         <section
+          className="ambient-section ambient-section--service-body"
           style={{
             background: 'var(--bg)',
             paddingBottom: 'clamp(80px, 10vw, 140px)',
@@ -363,11 +365,13 @@ export const LegalPage = ({ kind = 'terms' }) => {
             className="container"
             style={{
               maxWidth: 880,
-              background: 'var(--bg-elev)',
+              background: 'rgba(255,255,255,0.86)',
               border: '1px solid var(--line)',
               borderRadius: 'var(--radius-lg)',
               padding: 'clamp(28px, 4vw, 56px)',
               boxShadow: 'var(--shadow-sm)',
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
             }}
           >
             {data.sections.map((s, i) => (

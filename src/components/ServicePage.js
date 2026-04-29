@@ -245,7 +245,7 @@ const ServiceHero = ({ s }) => {
 
   return (
     <header
-      className="service-hero"
+      className="service-hero ambient-section ambient-section--service-hero"
       style={{
         position: 'relative',
         padding: 'clamp(96px, 11vw, 180px) 0 clamp(56px, 7vw, 96px)',
@@ -392,6 +392,7 @@ const ServiceBody = ({ s }) => {
   const accent = s.bg === 'var(--ink)' ? 'var(--brand-2)' : s.bg;
   return (
     <section
+      className="ambient-section ambient-section--service-body"
       style={{
         background: 'var(--bg)',
         padding: 'clamp(40px, 6vw, 88px) 0 clamp(80px, 10vw, 140px)',
@@ -666,6 +667,7 @@ const ServiceProcess = ({ s }) => {
   const accent = s.bg === 'var(--ink)' ? 'var(--brand-2)' : s.bg;
   return (
     <section
+      className="ambient-section ambient-section--service-process"
       style={{
         background: 'var(--bg)',
         padding: 'clamp(56px, 7vw, 96px) 0 clamp(72px, 9vw, 120px)',
@@ -960,7 +962,7 @@ export const ServicePage = ({ slug }) => {
   }
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--ink)' }}>
+    <div className="service-page-shell" style={{ background: 'var(--bg)', color: 'var(--ink)' }}>
       <Navbar />
       <main>
         <ServiceHero    s={s} />

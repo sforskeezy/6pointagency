@@ -101,7 +101,7 @@ const StatItem = ({ stat, index }) => (
               fontSize: '1.25em',
               letterSpacing: '-0.005em',
               textTransform: 'none',
-              color: 'var(--brand-2)',
+              color: '#8F6B2F',
               marginLeft: 2,
             }}
           >
@@ -135,6 +135,7 @@ export const Stats = () => {
   return (
     <section
       aria-label="Studio numbers"
+      className="ambient-section ambient-section--stats"
       style={{
         background: 'var(--bg)',
         padding: 'clamp(72px, 10vw, 128px) 0',

@@ -302,7 +302,7 @@ export const FAQ = () => {
                 Contact us
               </MagneticButton>
               <MagneticButton
-                href="mailto:hello@6pointdesigns.com"
+                href="mailto:hello@6point.design"
                 variant="outline"
                 size="md"
                 strength={10}

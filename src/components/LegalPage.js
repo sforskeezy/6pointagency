@@ -90,7 +90,7 @@ const TERMS_SECTIONS = [
   {
     h: '13. Contact',
     body: [
-      'Questions? Reach us at hello@6pointdesigns.com or (803) 669-5425.',
+      'Questions? Reach us at hello@6point.design or (803) 669-5425.',
     ],
   },
 ];
@@ -148,7 +148,7 @@ const PRIVACY_SECTIONS = [
   {
     h: '9. Your choices and rights',
     body: [
-      'Depending on your location, you may have rights to access, correct, delete, or restrict use of your personal information, or to object to certain processing. To exercise any of these rights, email us at hello@6pointdesigns.com and we will respond within a reasonable time.',
+      'Depending on your location, you may have rights to access, correct, delete, or restrict use of your personal information, or to object to certain processing. To exercise any of these rights, email us at hello@6point.design and we will respond within a reasonable time.',
     ],
   },
   {
@@ -172,7 +172,7 @@ const PRIVACY_SECTIONS = [
   {
     h: '13. Contact',
     body: [
-      'Questions or requests about this policy? Email hello@6pointdesigns.com or call (803) 669-5425.',
+      'Questions or requests about this policy? Email hello@6point.design or call (803) 669-5425.',
     ],
   },
 ];
@@ -413,7 +413,7 @@ export const LegalPage = ({ kind = 'terms' }) => {
                 ? It lives one click away.
               </span>
               <a
-                href="mailto:hello@6pointdesigns.com"
+                href="mailto:hello@6point.design"
                 style={{
                   color: 'var(--ink)',
                   textDecoration: 'underline',
@@ -421,7 +421,7 @@ export const LegalPage = ({ kind = 'terms' }) => {
                   fontWeight: 600,
                 }}
               >
-                hello@6pointdesigns.com
+                hello@6point.design
               </a>
             </motion.div>
           </div>

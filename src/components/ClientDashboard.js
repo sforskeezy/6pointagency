@@ -80,7 +80,7 @@ const projectFromEmail = (email) => {
 /* ───────────────────────── Mock data factory ───────────────────────── */
 
 const buildData = (email) => {
-  const rand = seedFromString(email || 'demo@6pointdesigns.com');
+  const rand = seedFromString(email || 'demo@6point.design');
 
   /* 8 weeks of traffic, gently trending up with random noise */
   const weeks = 8;
@@ -547,7 +547,7 @@ const Sidebar = ({ active, setActive, projectName, leadsCount, onSignOut, isMobi
             Need a tweak or a new page? Drop the team a note.
           </p>
           <a
-            href="mailto:hello@6pointdesigns.com"
+            href="mailto:hello@6point.design"
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               fontSize: 12, fontWeight: 700, color: C.ink,
@@ -578,8 +578,8 @@ const Sidebar = ({ active, setActive, projectName, leadsCount, onSignOut, isMobi
 
 export const ClientDashboard = () => {
   const [email] = useState(() => {
-    if (typeof window === 'undefined') return 'demo@6pointdesigns.com';
-    return window.sessionStorage.getItem('clientEmail') || 'demo@6pointdesigns.com';
+    if (typeof window === 'undefined') return 'demo@6point.design';
+    return window.sessionStorage.getItem('clientEmail') || 'demo@6point.design';
   });
   const [active, setActive] = useState('overview');
   const [range, setRange] = useState('30d');

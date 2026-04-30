@@ -855,7 +855,7 @@ const ServiceCTA = ({ s }) => {
               Start a {s.title.toLowerCase()} project
             </MagneticButton>
             <a
-              href="mailto:hello@6pointdesigns.com"
+              href="mailto:hello@6point.design"
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 color: 'var(--ink-2)', textDecoration: 'none',
@@ -863,7 +863,7 @@ const ServiceCTA = ({ s }) => {
                 padding: '12px 14px',
               }}
             >
-              or email hello@6pointdesigns.com
+              or email hello@6point.design
               <ArrowUpRight size={14} />
             </a>
           </div>

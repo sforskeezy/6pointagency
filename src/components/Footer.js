@@ -484,8 +484,11 @@ export const Footer = () => {
                   }}>
                     Say hey!
                   </h4>
-                  <a href="tel:+18036695425" className="footer-link" style={footerLinkStyle}>(803) 669-5425</a>
-                  <a href="mailto:hello@6pointdesigns.com" className="footer-link" style={footerLinkStyle}>hello@6pointdesigns.com</a>
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px 10px' }}>
+                    <a href="tel:+18036695425" className="footer-link" style={footerLinkStyle}>(803) 669-5425</a>
+                    <span aria-hidden style={{ color: 'rgba(255,255,255,0.35)', fontSize: 14 }}>|</span>
+                    <a href="mailto:hello@6point.design" className="footer-link" style={footerLinkStyle}>hello@6point.design</a>
+                  </div>
 
                   <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
                     <SocialIcon href="https://facebook.com" label="Facebook"><FacebookIcon /></SocialIcon>

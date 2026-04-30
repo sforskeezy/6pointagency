@@ -173,8 +173,8 @@ export const Contact = () => {
             </p>
 
             <div className="contact-cta-row" style={{ marginTop: 28, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-              <MagneticButton href="mailto:hello@6pointdesigns.com" variant="primary" size="md" strength={10} icon={<ArrowRight size={14} />} style={{ borderRadius: 4 }}>
-                <span className="contact-cta-full">hello@6pointdesigns.com</span>
+              <MagneticButton href="mailto:hello@6point.design" variant="primary" size="md" strength={10} icon={<ArrowRight size={14} />} style={{ borderRadius: 4 }}>
+                <span className="contact-cta-full">hello@6point.design</span>
                 <span className="contact-cta-short">Email us</span>
               </MagneticButton>
               <MagneticButton href="tel:+18036695425" variant="outline" size="md" strength={10} icon={<ArrowRight size={14} />} style={{ borderRadius: 4 }}>

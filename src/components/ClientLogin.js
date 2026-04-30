@@ -132,7 +132,7 @@ export const ClientLogin = () => {
             <span style={styles.passwordRow}>
               <span style={styles.fieldLabelText}>Password</span>
               <a
-                href="mailto:hello@6pointdesigns.com?subject=Password%20reset"
+                href="mailto:hello@6point.design?subject=Password%20reset"
                 style={styles.forgotLink}
               >
                 Forgot?

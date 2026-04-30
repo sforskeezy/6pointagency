@@ -40,10 +40,14 @@ const FAQS = [
     q: 'How much does a project cost?',
     a: (
       <p>
-        Websites start around <strong>$3,500</strong>. Full brand identity
-        starts at <strong>$2,800</strong>. Growth and social retainers run
-        monthly based on scope. After a 20-minute discovery call we send back
-        one fixed-price number — locked, no surprises, no hourly creep.
+        Every engagement is scoped to what you need, so pricing varies by project.
+        After a short discovery call we&apos;ll send a single fixed-price quote —
+        locked, no surprises.{' '}
+        <a href="#contact" style={{ color: 'var(--ink)', fontWeight: 600 }}>
+          Contact sales
+        </a>{' '}
+        to get a tailored number for your goals,
+        timeline, and scope.
       </p>
     ),
   },

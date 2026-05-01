@@ -14,6 +14,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { LegalPage } from './components/LegalPage';
 import { ServicePage } from './components/ServicePage';
 import { AnimationTest } from './components/AnimationTest';
+import { NotFoundPage } from './components/NotFoundPage';
 import { usePageMeta } from './usePageMeta';
 import './index.css';
 
@@ -21,10 +22,12 @@ const SERVICE_SLUGS = new Set(['branding', 'web-design', 'growth-strategy', 'soc
 
 /* Map the URL pathname + hash to a top-level view. Pathname wins over hash so
    that real, shareable URLs like `/animationtest` work without forcing a `#`.
-   Anything else falls through to the marketing home page (where the hash is
-   just a section anchor like #services). */
+   Unknown clean paths land on the branded 404 view; root hash links remain
+   the marketing page's section/sub-view router. */
 const viewFromLocation = (path, h) => {
-  if (path === '/animationtest' || path === '/animationtest/') return 'animationtest';
+  const cleanPath = path.replace(/\/+$/, '') || '/';
+  if (cleanPath === '/animationtest') return 'animationtest';
+  if (cleanPath !== '/') return 'not-found';
   if (h === '#animationtest') return 'animationtest';
   if (h === '#client-login') return 'login';
   if (h === '#client-dash')  return 'client-dash';
@@ -78,6 +81,7 @@ function App() {
   if (view === 'admin-dash') return <AdminDashboard />;
   if (view === 'terms') return <LegalPage kind="terms" />;
   if (view === 'privacy') return <LegalPage kind="privacy" />;
+  if (view === 'not-found') return <NotFoundPage />;
   if (view.startsWith('service:')) {
     return <ServicePage slug={view.slice('service:'.length)} />;
   }

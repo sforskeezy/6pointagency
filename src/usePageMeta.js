@@ -35,13 +35,14 @@ const VIEW_META = {
   'service:web-design':      { title: 'Web Design · 6POINT Designs',      color: '#2563EB' },
   'service:growth-strategy': { title: 'Growth Strategy · 6POINT Designs', color: BRAND },
   'service:social-media':    { title: 'Social Media · 6POINT Designs',    color: BRAND_2 },
+  'not-found':               { title: 'Page Not Found · 6POINT Designs',  color: BRAND_2, robots: 'noindex, follow' },
 };
 
 /* Per-section metadata for the home page. Keys match the actual element
    IDs of each major <section> on the marketing page so an
    IntersectionObserver can map directly from the DOM. */
 const SECTION_META = {
-  top:      { title: '6POINT Designs — Building brands & websites that actually grow.', color: BRAND },
+  top:      { title: '6POINT Designs | Web Design & Brand Growth Agency',              color: BRAND },
   services: { title: 'Services · 6POINT Designs',                                       color: BRAND_2 },
   work:     { title: 'Our Work · 6POINT Designs',                                       color: BRAND },
   faq:      { title: 'FAQ · 6POINT Designs',                                            color: BRAND_2 },
@@ -59,6 +60,18 @@ const apply = (meta) => {
   document.title = meta.title;
   const link = document.getElementById('favicon');
   if (link) link.setAttribute('href', faviconHref(meta.color));
+  let robots = document.querySelector('meta[name="robots"][data-route-meta="true"]');
+  if (meta.robots) {
+    if (!robots) {
+      robots = document.createElement('meta');
+      robots.setAttribute('name', 'robots');
+      robots.setAttribute('data-route-meta', 'true');
+      document.head.appendChild(robots);
+    }
+    robots.setAttribute('content', meta.robots);
+  } else if (robots) {
+    robots.remove();
+  }
 };
 
 /* Hook: keeps the document title + favicon in sync with the current view.

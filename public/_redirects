@@ -1,1 +1,5 @@
-/*    /index.html   200
+https://www.6point.design/*  https://6point.design/:splat  301!
+http://www.6point.design/*   https://6point.design/:splat  301!
+http://6point.design/*       https://6point.design/:splat  301!
+/animationtest     /index.html   200
+/*                 /index.html   404

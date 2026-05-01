@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "6POINT Designs",
+  "name": "6POINT Designs",
+  "description": "6POINT Designs builds modern websites, brand systems, and digital experiences for businesses.",
   "icons": [
     {
       "src": "favicon.ico",
@@ -18,8 +19,8 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#FAFAF8",
+  "background_color": "#FAFAF8"
 }
